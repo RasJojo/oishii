@@ -133,3 +133,39 @@
     @apply bg-background text-foreground;
   }
 }
+
+@keyframes scan {
+
+  0%,
+  100% {
+    top: 5%;
+  }
+
+  50% {
+    top: 95%;
+  }
+}
+
+@layer utilities {
+  .animate-scan {
+    animation: scan 3s ease-in-out infinite;
+  }
+}
+
+/* html5-qrcode overrides */
+#reader {
+  background: black !important;
+  border: none !important;
+  width: 100% !important;
+}
+
+#reader video {
+  object-fit: cover !important;
+  border-radius: 1.5rem !important;
+}
+
+#reader__dashboard,
+#reader__status_span,
+#reader img {
+  display: none !important;
+}

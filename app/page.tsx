@@ -1,58 +1,97 @@
-import { DeployButton } from "@/components/deploy-button";
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { Hero } from "@/components/hero";
-import { ThemeSwitcher } from "@/components/theme-switcher";
-import { ConnectSupabaseSteps } from "@/components/tutorial/connect-supabase-steps";
-import { SignUpUserSteps } from "@/components/tutorial/sign-up-user-steps";
-import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
-import { Suspense } from "react";
+import { Button } from "@/components/ui/button";
+import { ScanLine, Stethoscope, UtensilsCrossed, ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center">
-      <div className="flex-1 w-full flex flex-col gap-20 items-center">
-        <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
-          <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
-            <div className="flex gap-5 items-center font-semibold">
-              <Link href={"/"}>Next.js Supabase Starter</Link>
-              <div className="flex items-center gap-2">
-                <DeployButton />
-              </div>
+    <div className="relative min-h-screen flex flex-col bg-background overflow-hidden font-sans">
+      {/* Background Decor */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse delay-1000" />
+      </div>
+
+      {/* Header */}
+      <nav className="relative z-10 w-full flex justify-center border-b border-border/50 backdrop-blur-md h-16">
+        <div className="w-full max-w-5xl flex justify-between items-center px-6">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-primary/10 text-primary">
+              <ScanLine size={20} />
             </div>
-            {!hasEnvVars ? (
-              <EnvVarWarning />
-            ) : (
-              <Suspense>
-                <AuthButton />
-              </Suspense>
-            )}
+            <span className="font-bold text-xl tracking-tight">OISHII</span>
           </div>
-        </nav>
-        <div className="flex-1 flex flex-col gap-20 max-w-5xl p-5">
-          <Hero />
-          <main className="flex-1 flex flex-col gap-6 px-4">
-            <h2 className="font-medium text-xl mb-4">Next steps</h2>
-            {hasEnvVars ? <SignUpUserSteps /> : <ConnectSupabaseSteps />}
-          </main>
+          <div className="flex items-center gap-4">
+            <Link href="/auth/login/staff">
+              <Button variant="ghost" size="sm" className="rounded-xl text-xs font-semibold">
+                Accès Staff
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero Section */}
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-20">
+        <div className="space-y-6 max-w-3xl">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+            </span>
+            Système Intelligent de Restauration Hospitalière
+          </div>
+
+          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1]">
+            L'excellence nutritionnelle <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60">
+              au service du patient
+            </span>
+          </h1>
+
+          <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
+            Connectez les soins médicaux et la cuisine pour offrir une expérience alimentaire personnalisée, sûre et savoureuse.
+          </p>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
+            <Link href="/auth/login">
+              <Button size="lg" className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-base">
+                Espace Patient
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+          </div>
         </div>
 
-        <footer className="w-full flex items-center justify-center border-t mx-auto text-center text-xs gap-8 py-16">
-          <p>
-            Powered by{" "}
-            <a
-              href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
-              target="_blank"
-              className="font-bold hover:underline"
-              rel="noreferrer"
-            >
-              Supabase
-            </a>
-          </p>
-          <ThemeSwitcher />
-        </footer>
-      </div>
-    </main>
+        {/* Feature Cards Preview */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 w-full max-w-5xl">
+          <div className="p-8 rounded-3xl bg-card/30 border border-border/50 backdrop-blur-sm text-center space-y-4 hover:bg-card/50 transition-colors group">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Stethoscope size={24} />
+            </div>
+            <h3 className="font-bold">Médical</h3>
+            <p className="text-sm text-muted-foreground">Gestion des allergies et restrictions en temps réel.</p>
+          </div>
+          <div className="p-8 rounded-3xl bg-card/30 border border-border/50 backdrop-blur-sm text-center space-y-4 hover:bg-card/50 transition-colors group">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform">
+              <UtensilsCrossed size={24} />
+            </div>
+            <h3 className="font-bold">Cuisine</h3>
+            <p className="text-sm text-muted-foreground">Planification des menus et contrôle des ingrédients.</p>
+          </div>
+          <div className="p-8 rounded-3xl bg-card/30 border border-border/50 backdrop-blur-sm text-center space-y-4 hover:bg-card/50 transition-colors group">
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform">
+              <ScanLine size={24} />
+            </div>
+            <h3 className="font-bold">Patient</h3>
+            <p className="text-sm text-muted-foreground">Choix simplifié des repas via bracelet connecté.</p>
+          </div>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="relative z-10 py-12 border-t border-border/50 text-center text-xs text-muted-foreground uppercase tracking-widest opacity-60">
+        © 2026 OISHII SYSTEMS • Designed for Excellence
+      </footer>
+    </div>
   );
 }

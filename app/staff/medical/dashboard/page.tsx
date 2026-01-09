@@ -11,7 +11,8 @@ import {
     Settings2,
     CheckCircle2,
     Clock,
-    Plus
+    Plus,
+    UserPlus
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,22 @@ import {
     SheetTrigger,
     SheetFooter,
 } from "@/components/ui/sheet";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { MOCK_PATIENTS, ALLERGENS_LIST, DIETS_LIST, Patient } from "@/lib/mock-data";
@@ -44,6 +61,15 @@ export default function MedicalDashboard() {
     const [selectedService, setSelectedService] = useState<string | null>(null);
     const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS);
     const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
+    const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+
+    // New patient form state
+    const [newPatient, setNewPatient] = useState({
+        firstName: "",
+        lastName: "",
+        room: "",
+        service: "Cardiologie"
+    });
 
     const filteredPatients = patients.filter(p => {
         const matchesSearch = `${p.firstName} ${p.lastName} ${p.id}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -55,6 +81,21 @@ export default function MedicalDashboard() {
 
     const handleUpdatePatient = (patientId: string, updates: Partial<Patient>) => {
         setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+    };
+
+    const handleAddPatient = (e: React.FormEvent) => {
+        e.preventDefault();
+        const id = `PAT-${Math.floor(100 + Math.random() * 900)}`;
+        const patient: Patient = {
+            ...newPatient,
+            id,
+            allergies: [],
+            dietaryRestrictions: [],
+            status: "ADMITTED"
+        };
+        setPatients([patient, ...patients]);
+        setNewPatient({ firstName: "", lastName: "", room: "", service: "Cardiologie" });
+        setIsAddPatientOpen(false);
     };
 
     const toggleAllergy = (allergy: string) => {
@@ -178,19 +219,97 @@ export default function MedicalDashboard() {
                 {/* Search and Table */}
                 <Card className="border-none shadow-xl shadow-blue-500/5 bg-card/50 backdrop-blur-md overflow-hidden rounded-3xl">
                     <CardHeader className="border-b border-muted/50 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div>
+                        <div className="flex flex-col gap-1">
                             <CardTitle className="text-xl font-bold">Liste des Patients</CardTitle>
                             <CardDescription>Consultez et gérez les restrictions alimentaires par patient</CardDescription>
                         </div>
-                        <div className="relative w-full sm:w-80">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                            <Input
-                                placeholder="Rechercher un patient, chambre..."
-                                className="pl-10 h-11 bg-muted/30 border-none rounded-2xl focus-visible:ring-2 focus-visible:ring-blue-500/20"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                aria-label="Rechercher un patient"
-                            />
+                        <div className="flex items-center gap-3 w-full sm:w-auto">
+                            <div className="relative flex-1 sm:w-64">
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                                <Input
+                                    placeholder="Rechercher..."
+                                    className="pl-10 h-11 bg-muted/30 border-none rounded-2xl focus-visible:ring-2 focus-visible:ring-blue-500/20"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                    aria-label="Rechercher un patient"
+                                />
+                            </div>
+
+                            <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="h-11 rounded-2xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 font-bold gap-2">
+                                        <UserPlus size={18} />
+                                        <span className="hidden sm:inline">Admettre Patient</span>
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px] rounded-3xl border-none shadow-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-black">Nouvelle Admission</DialogTitle>
+                                        <DialogDescription>Enregistrez un nouveau patient pour son suivi nutritionnel.</DialogDescription>
+                                    </DialogHeader>
+                                    <form onSubmit={handleAddPatient} className="space-y-4 py-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="firstName" className="font-bold">Prénom</Label>
+                                                <Input
+                                                    id="firstName"
+                                                    placeholder="Jean"
+                                                    className="rounded-xl bg-muted/30 border-none"
+                                                    value={newPatient.firstName}
+                                                    onChange={(e) => setNewPatient({ ...newPatient, firstName: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="lastName" className="font-bold">Nom</Label>
+                                                <Input
+                                                    id="lastName"
+                                                    placeholder="Dupont"
+                                                    className="rounded-xl bg-muted/30 border-none"
+                                                    value={newPatient.lastName}
+                                                    onChange={(e) => setNewPatient({ ...newPatient, lastName: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <Label htmlFor="room" className="font-bold">Chambre</Label>
+                                                <Input
+                                                    id="room"
+                                                    placeholder="102"
+                                                    className="rounded-xl bg-muted/30 border-none"
+                                                    value={newPatient.room}
+                                                    onChange={(e) => setNewPatient({ ...newPatient, room: e.target.value })}
+                                                    required
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label htmlFor="service" className="font-bold">Service</Label>
+                                                <Select
+                                                    value={newPatient.service}
+                                                    onValueChange={(v) => setNewPatient({ ...newPatient, service: v })}
+                                                >
+                                                    <SelectTrigger className="rounded-xl bg-muted/30 border-none">
+                                                        <SelectValue placeholder="Cardiologie" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="rounded-xl">
+                                                        {services.map(s => (
+                                                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                                                        ))}
+                                                        <SelectItem value="Urgences">Urgences</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                        </div>
+                                        <DialogFooter className="pt-4">
+                                            <Button type="submit" className="w-full h-12 rounded-2xl bg-blue-600 font-bold shadow-xl shadow-blue-500/20">
+                                                Confirmer l'admission
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                         </div>
                     </CardHeader>
                     <CardContent className="p-0">
@@ -352,7 +471,7 @@ export default function MedicalDashboard() {
             </main>
 
             <footer className="p-6 text-center text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em] opacity-50">
-                OISHII SYSTEMS • MEDICAL DASHBOARD v2.0 • 2026
+                OISHII SYSTEMS • MEDICAL DASHBOARD v2.1 • 2026
             </footer>
         </div>
     );

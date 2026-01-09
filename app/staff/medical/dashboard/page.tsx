@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import {
-    Search,
     Stethoscope,
-    Filter,
-    ChevronRight,
-    AlertTriangle,
     User,
-    Settings2,
+    Search,
+    AlertTriangle,
     CheckCircle2,
     Clock,
     Plus,
-    UserPlus
+    UserPlus,
+    Settings2,
+    Filter
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -33,7 +32,6 @@ import {
     SheetHeader,
     SheetTitle,
     SheetTrigger,
-    SheetFooter,
 } from "@/components/ui/sheet";
 import {
     Dialog,
@@ -53,7 +51,12 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { MOCK_PATIENTS, ALLERGENS_LIST, DIETS_LIST, Patient } from "@/lib/mock-data";
+import {
+    MOCK_PATIENTS,
+    Patient,
+    ALLERGENS_LIST,
+    DIETS_LIST
+} from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export default function MedicalDashboard() {
@@ -119,48 +122,48 @@ export default function MedicalDashboard() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-muted/30">
+        <div className="flex flex-col min-h-screen bg-background text-foreground font-sans outline-none">
             {/* Header */}
-            <header className="sticky top-0 z-30 w-full border-b bg-background/80 backdrop-blur-md px-6">
-                <div className="flex h-16 items-center justify-between max-w-7xl mx-auto">
+            <header className="sticky top-0 z-30 w-full border-b bg-card px-6 h-16 flex items-center shadow-sm">
+                <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600">
+                        <div className="p-2 border border-primary/20 bg-primary/5 text-primary">
                             <Stethoscope size={24} />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold tracking-tight">Espace Médical</h1>
-                            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Gestion Nutritionnelle</p>
+                            <h1 className="text-sm font-black tracking-tight uppercase">Espace Médical</h1>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-wider">OISHII SYSTEMS</p>
                         </div>
                     </div>
 
-                    <div className="hidden md:flex items-center gap-4 bg-muted/50 p-1 rounded-xl border border-border/50">
+                    <nav className="hidden lg:flex items-center gap-1 border border-border p-1 bg-muted/20" aria-label="Services">
                         <Button
-                            variant={selectedService === null ? "secondary" : "ghost"}
+                            variant={selectedService === null ? "default" : "ghost"}
                             size="sm"
                             onClick={() => setSelectedService(null)}
-                            className="rounded-lg text-xs font-semibold"
+                            className="text-[10px] h-7 font-black uppercase tracking-widest px-3 focus-visible:ring-2 focus-visible:ring-primary"
                         >
-                            Tous les services
+                            Tous
                         </Button>
                         {services.map(service => (
                             <Button
                                 key={service}
-                                variant={selectedService === service ? "secondary" : "ghost"}
+                                variant={selectedService === service ? "default" : "ghost"}
                                 size="sm"
                                 onClick={() => setSelectedService(service)}
-                                className="rounded-lg text-xs font-semibold text-muted-foreground"
+                                className="text-[10px] h-7 font-black uppercase tracking-widest px-3 focus-visible:ring-2 focus-visible:ring-primary"
                             >
                                 {service}
                             </Button>
                         ))}
-                    </div>
+                    </nav>
 
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
-                            <p className="text-sm font-bold">Dr. Martin</p>
-                            <p className="text-[10px] text-muted-foreground font-bold uppercase">Service Cardiologie</p>
+                            <p className="text-xs font-black">Dr. Martin</p>
+                            <p className="text-[9px] text-muted-foreground font-bold uppercase">Cardiologie</p>
                         </div>
-                        <div className="h-10 w-10 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-600 font-bold">
+                        <div className="h-8 w-8 border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
                             DM
                         </div>
                     </div>
@@ -168,310 +171,247 @@ export default function MedicalDashboard() {
             </header>
 
             <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
-                {/* Stats Preview */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <Card className="bg-card/50 backdrop-blur-sm border-none shadow-sm overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-blue-500/10 text-blue-500">
-                                <User size={20} />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-black">{patients.length}</p>
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Patients suivis</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm border-none shadow-sm overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-orange-500/10 text-orange-500">
-                                <AlertTriangle size={20} />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-black">{patients.filter(p => p.allergies.length > 0).length}</p>
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Avec Allergies</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm border-none shadow-sm overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-500">
-                                <Clock size={20} />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-black">{patients.filter(p => p.status === "PENDING_SELECTION").length}</p>
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Repas en attente</p>
-                            </div>
-                        </CardContent>
-                    </Card>
-                    <Card className="bg-card/50 backdrop-blur-sm border-none shadow-sm overflow-hidden">
-                        <CardContent className="p-4 flex items-center gap-4">
-                            <div className="p-3 rounded-2xl bg-green-500/10 text-green-500">
-                                <CheckCircle2 size={20} />
-                            </div>
-                            <div>
-                                <p className="text-2xl font-black">{patients.filter(p => p.status === "ADMITTED").length}</p>
-                                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Actifs ce jour</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                {/* Stats */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {[
+                        { label: "Patients", val: patients.length, icon: User, color: "primary" },
+                        { label: "Alertes", val: patients.filter(p => p.allergies.length > 0).length, icon: AlertTriangle, color: "destructive" },
+                        { label: "En attente", val: patients.filter(p => p.status === "PENDING_SELECTION").length, icon: Clock, color: "secondary" },
+                        { label: "Actifs", val: patients.filter(p => p.status === "ADMITTED").length, icon: CheckCircle2, color: "primary" }
+                    ].map((stat, i) => (
+                        <Card key={i} className="border border-border bg-card shadow-sm rounded-none">
+                            <CardContent className="p-4 flex items-center gap-4">
+                                <div className={cn("p-2 border", `bg-${stat.color}/10 text-${stat.color} border-${stat.color}/20`)}>
+                                    <stat.icon size={16} />
+                                </div>
+                                <div className="space-y-0.5">
+                                    <p className="text-xl font-black leading-none">{stat.val}</p>
+                                    <p className="text-[9px] uppercase font-black text-muted-foreground tracking-widest">{stat.label}</p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    ))}
                 </div>
 
-                {/* Search and Table */}
-                <Card className="border-none shadow-xl shadow-blue-500/5 bg-card/50 backdrop-blur-md overflow-hidden rounded-3xl">
-                    <CardHeader className="border-b border-muted/50 pb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="flex flex-col gap-1">
-                            <CardTitle className="text-xl font-bold">Liste des Patients</CardTitle>
-                            <CardDescription>Consultez et gérez les restrictions alimentaires par patient</CardDescription>
-                        </div>
-                        <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <div className="relative flex-1 sm:w-64">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                                <Input
-                                    placeholder="Rechercher..."
-                                    className="pl-10 h-11 bg-muted/30 border-none rounded-2xl focus-visible:ring-2 focus-visible:ring-blue-500/20"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    aria-label="Rechercher un patient"
-                                />
-                            </div>
+                {/* Main Action Bar */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full sm:w-80">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+                        <Input
+                            placeholder="RECHERCHER UN PATIENT..."
+                            className="pl-9 h-11 bg-card border-border focus-visible:ring-2 focus-visible:ring-primary/20 text-xs font-bold uppercase"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
 
-                            <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className="h-11 rounded-2xl bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-500/20 font-bold gap-2">
-                                        <UserPlus size={18} />
-                                        <span className="hidden sm:inline">Admettre Patient</span>
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="sm:max-w-[425px] rounded-3xl border-none shadow-2xl">
-                                    <DialogHeader>
-                                        <DialogTitle className="text-2xl font-black">Nouvelle Admission</DialogTitle>
-                                        <DialogDescription>Enregistrez un nouveau patient pour son suivi nutritionnel.</DialogDescription>
-                                    </DialogHeader>
-                                    <form onSubmit={handleAddPatient} className="space-y-4 py-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="firstName" className="font-bold">Prénom</Label>
-                                                <Input
-                                                    id="firstName"
-                                                    placeholder="Jean"
-                                                    className="rounded-xl bg-muted/30 border-none"
-                                                    value={newPatient.firstName}
-                                                    onChange={(e) => setNewPatient({ ...newPatient, firstName: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="lastName" className="font-bold">Nom</Label>
-                                                <Input
-                                                    id="lastName"
-                                                    placeholder="Dupont"
-                                                    className="rounded-xl bg-muted/30 border-none"
-                                                    value={newPatient.lastName}
-                                                    onChange={(e) => setNewPatient({ ...newPatient, lastName: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label htmlFor="room" className="font-bold">Chambre</Label>
-                                                <Input
-                                                    id="room"
-                                                    placeholder="102"
-                                                    className="rounded-xl bg-muted/30 border-none"
-                                                    value={newPatient.room}
-                                                    onChange={(e) => setNewPatient({ ...newPatient, room: e.target.value })}
-                                                    required
-                                                />
-                                            </div>
-                                            <div className="space-y-2">
-                                                <Label htmlFor="service" className="font-bold">Service</Label>
-                                                <Select
-                                                    value={newPatient.service}
-                                                    onValueChange={(v) => setNewPatient({ ...newPatient, service: v })}
-                                                >
-                                                    <SelectTrigger className="rounded-xl bg-muted/30 border-none">
-                                                        <SelectValue placeholder="Cardiologie" />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-xl">
-                                                        {services.map(s => (
-                                                            <SelectItem key={s} value={s}>{s}</SelectItem>
-                                                        ))}
-                                                        <SelectItem value="Urgences">Urgences</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-                                        <DialogFooter className="pt-4">
-                                            <Button type="submit" className="w-full h-12 rounded-2xl bg-blue-600 font-bold shadow-xl shadow-blue-500/20">
-                                                Confirmer l'admission
-                                            </Button>
-                                        </DialogFooter>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                        <div className="overflow-x-auto">
-                            <Table>
-                                <TableHeader className="bg-muted/30">
-                                    <TableRow className="hover:bg-transparent border-none">
-                                        <TableHead className="w-[300px] font-bold py-4">Patient</TableHead>
-                                        <TableHead className="font-bold">Localisation</TableHead>
-                                        <TableHead className="font-bold">Allergies</TableHead>
-                                        <TableHead className="font-bold">Régime</TableHead>
-                                        <TableHead className="text-right py-4 pr-6 font-bold font-bold">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {filteredPatients.length > 0 ? (
-                                        filteredPatients.map((patient) => (
-                                            <TableRow key={patient.id} className="group hover:bg-muted/20 transition-colors border-muted/30">
-                                                <TableCell className="py-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="h-10 w-10 rounded-2xl bg-muted flex items-center justify-center font-bold text-muted-foreground">
-                                                            {patient.firstName[0]}{patient.lastName[0]}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold leading-none">{patient.lastName} {patient.firstName}</p>
-                                                            <p className="text-[10px] font-mono text-muted-foreground mt-1">{patient.id}</p>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1">
-                                                        <p className="text-xs font-semibold">Chambre {patient.room}</p>
-                                                        <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-tighter h-5 px-1 bg-muted/50 border-none">
-                                                            {patient.service}
-                                                        </Badge>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {patient.allergies.length > 0 ? (
-                                                            patient.allergies.map(a => (
-                                                                <Badge key={a} variant="destructive" className="text-[10px] font-bold h-6 rounded-lg shadow-sm shadow-destructive/20 border-none">
-                                                                    {a}
-                                                                </Badge>
-                                                            ))
-                                                        ) : (
-                                                            <span className="text-xs text-muted-foreground italic">Aucune</span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {patient.dietaryRestrictions.length > 0 ? (
-                                                            patient.dietaryRestrictions.map(d => (
-                                                                <Badge key={d} className="text-[10px] font-bold h-6 rounded-lg bg-blue-500/10 text-blue-600 hover:bg-blue-500/20 border-none shadow-none">
-                                                                    {d}
-                                                                </Badge>
-                                                            ))
-                                                        ) : (
-                                                            <Badge variant="outline" className="text-[10px] font-bold h-6 rounded-lg bg-green-500/5 text-green-600 border-green-200">
-                                                                Normal
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="text-right pr-6">
-                                                    <Sheet>
-                                                        <SheetTrigger asChild>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={() => setEditingPatient(patient)}
-                                                                className="rounded-xl group-hover:bg-blue-500 group-hover:text-white transition-all h-9"
-                                                            >
-                                                                Modifier
-                                                                <Settings2 className="ml-2 h-4 w-4" aria-hidden="true" />
-                                                            </Button>
-                                                        </SheetTrigger>
-                                                        <SheetContent side="right" className="sm:max-w-md bg-background/95 backdrop-blur-md border-none shadow-2xl">
-                                                            <SheetHeader className="pb-6 border-b border-muted/50">
-                                                                <div className="flex items-center gap-3 mb-2">
-                                                                    <div className="h-12 w-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-black">
-                                                                        {patient.firstName[0]}{patient.lastName[0]}
-                                                                    </div>
-                                                                    <div>
-                                                                        <SheetTitle className="text-2xl font-black">{patient.firstName} {patient.lastName}</SheetTitle>
-                                                                        <SheetDescription className="font-mono text-xs">ID: {patient.id} • Ch. {patient.room}</SheetDescription>
-                                                                    </div>
-                                                                </div>
-                                                            </SheetHeader>
+                    <Dialog open={isAddPatientOpen} onOpenChange={setIsAddPatientOpen}>
+                        <DialogTrigger asChild>
+                            <Button className="h-11 w-full sm:w-auto px-8 border border-primary uppercase font-black text-[10px] tracking-[0.2em] gap-2 shadow-sm focus-visible:ring-2 focus-visible:ring-primary">
+                                <UserPlus size={16} />
+                                Admission Patient
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md bg-card border-2 border-border p-8 rounded-none shadow-2xl">
+                            <DialogHeader className="mb-6">
+                                <DialogTitle className="text-2xl font-black uppercase tracking-tight">Nouvelle Admission</DialogTitle>
+                                <DialogDescription className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Enregistrez les informations du patient.</DialogDescription>
+                            </DialogHeader>
+                            <form onSubmit={handleAddPatient} className="space-y-6">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="firstName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Prénom</Label>
+                                        <Input id="firstName" value={newPatient.firstName} onChange={(e) => setNewPatient({ ...newPatient, firstName: e.target.value })} required className="h-10 text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-primary" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="lastName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nom de famille</Label>
+                                        <Input id="lastName" value={newPatient.lastName} onChange={(e) => setNewPatient({ ...newPatient, lastName: e.target.value })} required className="h-10 text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-primary" />
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="room" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Chambre</Label>
+                                        <Input id="room" value={newPatient.room} onChange={(e) => setNewPatient({ ...newPatient, room: e.target.value })} required className="h-10 text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-primary" />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="service" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Service</Label>
+                                        <Select value={newPatient.service} onValueChange={(v) => setNewPatient({ ...newPatient, service: v })}>
+                                            <SelectTrigger className="h-10 font-bold text-sm bg-muted/20 border-border">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent className="border-border">
+                                                {services.map(s => <SelectItem key={s} value={s} className="font-bold text-xs">{s.toUpperCase()}</SelectItem>)}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                                <Button type="submit" className="w-full h-12 font-black uppercase tracking-[0.2em] text-[10px] mt-2">Valider l'Admission</Button>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
 
-                                                            <div className="py-8 space-y-8 h-[calc(100vh-200px)] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-muted">
-                                                                <section>
-                                                                    <div className="flex items-center justify-between mb-4">
-                                                                        <h3 className="text-sm font-black uppercase tracking-widest text-destructive flex items-center gap-2">
-                                                                            <AlertTriangle size={16} />
-                                                                            Allergies Connues
-                                                                        </h3>
-                                                                        <Badge variant="destructive" className="h-5 text-[10px]">{editingPatient?.allergies.length}</Badge>
-                                                                    </div>
-                                                                    <div className="grid grid-cols-2 gap-3">
-                                                                        {ALLERGENS_LIST.map(allergy => (
-                                                                            <div key={allergy} className="flex items-center space-x-2 bg-muted/20 p-2 rounded-xl border border-transparent hover:border-destructive/20 transition-all">
-                                                                                <Checkbox
-                                                                                    id={`allergy-${allergy}`}
-                                                                                    checked={editingPatient?.allergies.includes(allergy)}
-                                                                                    onCheckedChange={() => toggleAllergy(allergy)}
-                                                                                />
-                                                                                <Label htmlFor={`allergy-${allergy}`} className="text-xs font-bold cursor-pointer">{allergy}</Label>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </section>
-
-                                                                <section>
-                                                                    <div className="flex items-center justify-between mb-4">
-                                                                        <h3 className="text-sm font-black uppercase tracking-widest text-blue-600 flex items-center gap-2">
-                                                                            <Plus size={16} />
-                                                                            Régimes Thérapeutiques
-                                                                        </h3>
-                                                                    </div>
-                                                                    <div className="grid grid-cols-1 gap-2">
-                                                                        {DIETS_LIST.map(diet => (
-                                                                            <div key={diet} className="flex items-center space-x-2 bg-muted/20 p-3 rounded-xl border border-transparent hover:border-blue-500/20 transition-all cursor-pointer">
-                                                                                <Checkbox
-                                                                                    id={`diet-${diet}`}
-                                                                                    checked={editingPatient?.dietaryRestrictions.includes(diet)}
-                                                                                    onCheckedChange={() => toggleDiet(diet)}
-                                                                                />
-                                                                                <Label htmlFor={`diet-${diet}`} className="text-sm font-bold flex-1 cursor-pointer">{diet}</Label>
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </section>
+                {/* Table */}
+                <Card className="border border-border bg-card shadow-sm rounded-none overflow-hidden">
+                    <div className="overflow-x-auto">
+                        <Table>
+                            <TableHeader className="bg-muted/30 border-b border-border">
+                                <TableRow>
+                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground pl-6">Information Patient</TableHead>
+                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Localisation</TableHead>
+                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Restrictions / Allergies</TableHead>
+                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground text-right pr-8">Actions</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredPatients.map((patient) => (
+                                    <TableRow key={patient.id} className="border-b border-border/50 hover:bg-muted/5 group">
+                                        <TableCell className="py-4 pl-6">
+                                            <div className="flex items-center gap-4">
+                                                <div className="h-10 w-10 border border-border bg-muted/50 flex items-center justify-center font-black text-xs text-muted-foreground">
+                                                    {patient.firstName[0]}{patient.lastName[0]}
+                                                </div>
+                                                <div>
+                                                    <p className="font-black text-xs uppercase tracking-tight">{patient.lastName} {patient.firstName}</p>
+                                                    <p className="text-[9px] font-mono text-muted-foreground/60 uppercase">ID: {patient.id}</p>
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-black uppercase tracking-widest">CH. {patient.room}</p>
+                                                <Badge variant="outline" className="text-[8px] font-bold uppercase rounded-none px-1 border-border bg-muted/30">{patient.service}</Badge>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="py-4">
+                                            <div className="flex flex-wrap gap-1.5">
+                                                {patient.allergies.length > 0 ? (
+                                                    patient.allergies.map(a => (
+                                                        <span key={a} className="text-[9px] font-black uppercase px-2 py-0.5 border border-destructive/20 bg-destructive/5 text-destructive">
+                                                            {a}
+                                                        </span>
+                                                    ))
+                                                ) : patient.dietaryRestrictions.length > 0 ? (
+                                                    patient.dietaryRestrictions.map(d => (
+                                                        <span key={d} className="text-[9px] font-black uppercase px-2 py-0.5 border border-primary/20 bg-primary/5 text-primary">
+                                                            {d}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-[9px] font-bold text-muted-foreground/40 italic uppercase">Aucune restriction</span>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="py-4 text-right pr-8">
+                                            <Sheet>
+                                                <SheetTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        onClick={() => setEditingPatient(patient)}
+                                                        className="h-9 px-6 text-[9px] font-black uppercase tracking-[0.1em] border-border hover:bg-primary hover:text-white transition-all focus-visible:ring-2 focus-visible:ring-primary"
+                                                    >
+                                                        Configurer
+                                                    </Button>
+                                                </SheetTrigger>
+                                                <SheetContent className="bg-card border-l-2 border-border shadow-2xl p-0 w-[400px]">
+                                                    <SheetHeader className="p-8 border-b border-border bg-muted/10">
+                                                        <div className="flex items-center gap-5">
+                                                            <div className="h-14 w-14 border-2 border-border bg-background flex items-center justify-center font-black text-xl text-primary">
+                                                                {patient.firstName[0]}{patient.lastName[0]}
                                                             </div>
+                                                            <div>
+                                                                <SheetTitle className="text-xl font-black uppercase tracking-tight">{patient.lastName} {patient.firstName}</SheetTitle>
+                                                                <SheetDescription className="text-[10px] font-mono uppercase font-black text-muted-foreground mt-1">ID: {patient.id} • CHAMBRE {patient.room}</SheetDescription>
+                                                            </div>
+                                                        </div>
+                                                    </SheetHeader>
 
-                                                            <SheetFooter className="absolute bottom-6 left-6 right-6">
-                                                                <Button className="w-full h-12 rounded-2xl font-bold bg-blue-600 hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all active:scale-95">
-                                                                    Enregistrer les modifications
-                                                                </Button>
-                                                            </SheetFooter>
-                                                        </SheetContent>
-                                                    </Sheet>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={5} className="h-48 text-center text-muted-foreground italic">
-                                                Aucun patient ne correspond à votre recherche.
-                                            </TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
+                                                    <div className="p-8 space-y-10 h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin">
+                                                        <section className="space-y-4">
+                                                            <div className="flex items-center justify-between border-b border-border pb-2">
+                                                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-destructive flex items-center gap-2">
+                                                                    <AlertTriangle size={14} /> Allergies
+                                                                </h3>
+                                                                <Badge variant="destructive" className="h-5 px-1.5 rounded-none font-black text-[9px]">{editingPatient?.allergies.length}</Badge>
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-3">
+                                                                {ALLERGENS_LIST.map(allergy => (
+                                                                    <div
+                                                                        key={allergy}
+                                                                        className={cn(
+                                                                            "flex items-center space-x-2 border p-3 cursor-pointer transition-colors",
+                                                                            editingPatient?.allergies.includes(allergy)
+                                                                                ? "border-destructive/40 bg-destructive/5"
+                                                                                : "border-border bg-muted/10 hover:border-destructive/20"
+                                                                        )}
+                                                                        onClick={() => toggleAllergy(allergy)}
+                                                                    >
+                                                                        <Checkbox
+                                                                            id={`allergy-${allergy}`}
+                                                                            checked={editingPatient?.allergies.includes(allergy)}
+                                                                            className="border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
+                                                                        />
+                                                                        <Label htmlFor={`allergy-${allergy}`} className="text-[10px] font-black uppercase cursor-pointer flex-1">{allergy}</Label>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </section>
+
+                                                        <section className="space-y-4">
+                                                            <div className="flex items-center justify-between border-b border-border pb-2">
+                                                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
+                                                                    <Plus size={14} /> Régimes
+                                                                </h3>
+                                                                <Badge variant="outline" className="h-5 px-1.5 rounded-none border-primary text-primary font-black text-[9px]">{editingPatient?.dietaryRestrictions.length}</Badge>
+                                                            </div>
+                                                            <div className="space-y-2">
+                                                                {DIETS_LIST.map(diet => (
+                                                                    <div
+                                                                        key={diet}
+                                                                        className={cn(
+                                                                            "flex items-center space-x-3 border p-4 cursor-pointer transition-colors",
+                                                                            editingPatient?.dietaryRestrictions.includes(diet)
+                                                                                ? "border-primary bg-primary/5"
+                                                                                : "border-border bg-muted/10 hover:border-primary/40"
+                                                                        )}
+                                                                        onClick={() => toggleDiet(diet)}
+                                                                    >
+                                                                        <Checkbox
+                                                                            id={`diet-${diet}`}
+                                                                            checked={editingPatient?.dietaryRestrictions.includes(diet)}
+                                                                            className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                                                        />
+                                                                        <Label htmlFor={`diet-${diet}`} className="text-[11px] font-black uppercase cursor-pointer flex-1">{diet}</Label>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </section>
+                                                    </div>
+
+                                                    <div className="absolute bottom-8 left-8 right-8">
+                                                        <Button className="w-full h-14 font-black uppercase tracking-[0.2em] text-[11px] shadow-xl border-2 border-primary">
+                                                            Enregistrer le Profil
+                                                        </Button>
+                                                    </div>
+                                                </SheetContent>
+                                            </Sheet>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
                 </Card>
             </main>
 
-            <footer className="p-6 text-center text-[10px] text-muted-foreground uppercase font-bold tracking-[0.2em] opacity-50">
-                OISHII SYSTEMS • MEDICAL DASHBOARD v2.1 • 2026
+            <footer className="p-8 border-t border-border flex flex-col items-center gap-2 bg-card">
+                <p className="text-[9px] font-black uppercase tracking-[0.4em] opacity-40">OISHII SYSTEMS • MEDICAL OPS v3.1</p>
+                <div className="flex gap-4 opacity-20 text-[8px] font-bold uppercase tracking-widest">
+                    <span>RGAA COMPLIANT</span>
+                    <span>•</span>
+                    <span>W3C ACCESSIBLE</span>
+                </div>
             </footer>
         </div>
     );

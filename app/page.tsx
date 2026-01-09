@@ -1,29 +1,28 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ScanLine, Stethoscope, UtensilsCrossed, ArrowRight } from "lucide-react";
+import { ScanLine, Stethoscope, UtensilsCrossed, ArrowRight, ShieldCheck, Zap } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="relative min-h-screen flex flex-col bg-background overflow-hidden font-sans">
-      {/* Background Decor - Decorative: aria-hidden */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-primary/5 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse delay-1000" />
+    <div className="relative min-h-screen flex flex-col bg-background text-foreground font-sans">
+      {/* Background Decor - Simple and non-distracting */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary/2 opacity-[0.03] border-l border-b border-primary/10 -rotate-12 translate-x-1/4 -translate-y-1/4" />
       </div>
 
       {/* Header */}
-      <header className="relative z-10 w-full flex justify-center border-b border-border/50 backdrop-blur-md h-16">
-        <nav className="w-full max-w-5xl flex justify-between items-center px-6" aria-label="Navigation principale">
-          <div className="flex items-center gap-2">
-            <div className="p-1.5 rounded-lg bg-primary/10 text-primary" aria-hidden="true">
-              <ScanLine size={20} />
+      <header className="relative z-10 w-full border-b border-border bg-card h-16 flex items-center shadow-xs">
+        <nav className="w-full max-w-7xl mx-auto flex justify-between items-center px-6" aria-label="Menu principal">
+          <div className="flex items-center gap-3">
+            <div className="p-1.5 border-2 border-primary bg-primary/10 text-primary" aria-hidden="true">
+              <ScanLine size={18} />
             </div>
-            <span className="font-bold text-xl tracking-tight">OISHII</span>
+            <span className="font-black text-xl tracking-[0.2em] uppercase">OISHII</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/staff/login">
-              <Button variant="ghost" size="sm" className="rounded-xl text-xs font-semibold">
-                Accès Personnel Staff
+              <Button variant="outline" size="sm" className="h-9 px-6 border-border font-black text-[10px] uppercase tracking-widest rounded-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary">
+                Espace Personnel
               </Button>
             </Link>
           </div>
@@ -31,66 +30,75 @@ export default function Home() {
       </header>
 
       {/* Hero Section */}
-      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-20">
-        <div className="space-y-6 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-[10px] font-bold uppercase tracking-widest border border-primary/20">
-            <span className="relative flex h-2 w-2" aria-hidden="true">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-            </span>
-            Système Intelligent de Restauration Hospitalière
+      <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-12 md:py-24 max-w-7xl mx-auto w-full">
+        <div className="space-y-8 max-w-4xl">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
+            <Zap size={14} className="animate-pulse" />
+            Système Centralisé de Restauration Hospitalière
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-extrabold tracking-tighter leading-[1.1]">
+          <h1 className="text-4xl md:text-7xl font-black tracking-tight leading-[1.05] uppercase">
             L'excellence nutritionnelle <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary via-primary/80 to-primary/60">
-              au service du patient
-            </span>
+            <span className="text-primary">au service du patient</span>
           </h1>
 
-          <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Connectez les soins médicaux et la cuisine pour offrir une expérience alimentaire personnalisée, sûre et savoureuse.
+          <p className="text-base md:text-xl text-muted-foreground max-w-2xl mx-auto font-medium leading-relaxed">
+            Synchronisez les prescriptions médicales et la production culinaire pour garantir sécurité et satisfaction à chaque repas.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-            <Link href="/patient">
-              <Button size="lg" className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-base">
-                Espace Patient (Accès Bracelet)
-                <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-10">
+            <Link href="/patient" className="w-full sm:w-auto">
+              <Button size="lg" className="w-full sm:w-auto h-14 px-10 border-2 border-primary bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] text-xs shadow-[8px_8px_0px_0px_rgba(0,0,0,0.1)] hover:translate-y-[-2px] hover:shadow-[12px_12px_0px_0px_rgba(0,0,0,0.1)] active:translate-y-[0px] transition-all rounded-none focus-visible:ring-4 focus-visible:ring-primary/30">
+                Accès Portail Patient
+                <ArrowRight className="ml-3 h-5 w-5" aria-hidden="true" />
               </Button>
             </Link>
           </div>
         </div>
 
-        {/* Feature Cards Preview */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-24 w-full max-w-5xl">
-          <section className="p-8 rounded-3xl bg-card/30 border border-border/50 backdrop-blur-sm text-center space-y-4 hover:bg-card/50 transition-colors group">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform" aria-hidden="true">
-              <Stethoscope size={24} />
+        {/* Feature Grid - Solid & Accessible */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 mt-24 border-2 border-border bg-border shadow-xl">
+          <section className="p-10 bg-card flex flex-col items-center text-center space-y-4 hover:bg-muted/30 transition-colors border-r border-border md:border-r last:border-r-0">
+            <div className="w-14 h-14 border border-blue-500/20 bg-blue-500/10 text-blue-600 flex items-center justify-center mb-2" aria-hidden="true">
+              <Stethoscope size={28} />
             </div>
-            <h2 className="font-bold text-xl">Pôle Médical</h2>
-            <p className="text-sm text-muted-foreground">Gestion des allergies et restrictions alimentaires en temps réel pour chaque patient.</p>
+            <h2 className="font-black text-base uppercase tracking-widest">Contrôle Médical</h2>
+            <p className="text-xs font-bold leading-loose text-muted-foreground uppercase opacity-80">Gestion des pathologies et allergies critiques en temps réel.</p>
           </section>
-          <section className="p-8 rounded-3xl bg-card/30 border border-border/50 backdrop-blur-sm text-center space-y-4 hover:bg-card/50 transition-colors group">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform" aria-hidden="true">
-              <UtensilsCrossed size={24} />
+
+          <section className="p-10 bg-card flex flex-col items-center text-center space-y-4 hover:bg-muted/30 transition-colors border-r border-border md:border-r last:border-r-0">
+            <div className="w-14 h-14 border border-orange-500/20 bg-orange-500/10 text-orange-600 flex items-center justify-center mb-2" aria-hidden="true">
+              <UtensilsCrossed size={28} />
             </div>
-            <h2 className="font-bold text-xl">Service Cuisine</h2>
-            <p className="text-sm text-muted-foreground">Planification automatisée des menus et contrôle strict des allergènes en production.</p>
+            <h2 className="font-black text-base uppercase tracking-widest">Cuisine Centrale</h2>
+            <p className="text-xs font-bold leading-loose text-muted-foreground uppercase opacity-80">Optimisation de la production et traçabilité des ingrédients.</p>
           </section>
-          <section className="p-8 rounded-3xl bg-card/30 border border-border/50 backdrop-blur-sm text-center space-y-4 hover:bg-card/50 transition-colors group">
-            <div className="mx-auto w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center group-hover:scale-110 transition-transform" aria-hidden="true">
-              <ScanLine size={24} />
+
+          <section className="p-10 bg-card flex flex-col items-center text-center space-y-4 hover:bg-muted/30 transition-colors">
+            <div className="w-14 h-14 border border-primary/20 bg-primary/10 text-primary flex items-center justify-center mb-2" aria-hidden="true">
+              <ScanLine size={28} />
             </div>
-            <h2 className="font-bold text-xl">Liberté Patient</h2>
-            <p className="text-sm text-muted-foreground">Choix simplifié des repas via bracelet connecté ou identifiant court sécurisé.</p>
+            <h2 className="font-black text-base uppercase tracking-widest">Interface Patient</h2>
+            <p className="text-xs font-bold leading-loose text-muted-foreground uppercase opacity-80">Personnalisation des menus via QR code ou identifiant unique.</p>
           </section>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 py-12 border-t border-border/50 text-center text-xs text-muted-foreground uppercase tracking-widest opacity-60">
-        <p>© 2026 OISHII SYSTEMS • Conçu pour l'excellence hospitalière</p>
+      <footer className="w-full py-12 border-t border-border bg-card flex flex-col items-center gap-4">
+        <div className="flex items-center gap-6 opacity-40">
+          <div className="flex items-center gap-2">
+            <ShieldCheck size={14} />
+            <span className="text-[10px] font-black uppercase tracking-widest">ISO 27001 SECURE</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Zap size={14} />
+            <span className="text-[10px] font-black uppercase tracking-widest">RGAA COMPLIANT</span>
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground font-black uppercase tracking-[0.5em] opacity-30 mt-4 leading-loose">
+          OISHII SYSTEMS • EXCELLENCE OPERATIONNELLE • © 2026
+        </p>
       </footer>
     </div>
   );

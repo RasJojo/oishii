@@ -125,7 +125,7 @@ export function ModernLogin({
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card className="overflow-hidden border-none shadow-2xl bg-card/50 backdrop-blur-md">
                 <CardHeader className="space-y-1 text-center pb-8 border-b border-muted/50">
-                    <div className="flex justify-center mb-4">
+                    <div className="flex justify-center mb-4" aria-hidden="true">
                         <div className="p-3 rounded-2xl bg-primary/10 text-primary">
                             <ScanLine size={32} />
                         </div>
@@ -137,7 +137,7 @@ export function ModernLogin({
                 </CardHeader>
                 <CardContent className="pt-8">
                     <Tabs defaultValue="qr" className="w-full" onValueChange={() => stopScanner()}>
-                        <TabsList className="grid w-full grid-cols-2 mb-8 bg-muted/50 p-1 rounded-xl">
+                        <TabsList className="grid w-full grid-cols-2 mb-8 bg-muted/50 p-1 rounded-xl" aria-label="Méthodes de connexion">
                             <TabsTrigger value="qr" className="rounded-lg">QR Code</TabsTrigger>
                             <TabsTrigger value="id" className="rounded-lg">Identifiant</TabsTrigger>
                         </TabsList>
@@ -145,10 +145,13 @@ export function ModernLogin({
                         <TabsContent value="qr" className="space-y-6">
                             <div className="min-h-[280px] flex flex-col items-center justify-center">
                                 {error && (
-                                    <div className="mb-6 p-4 rounded-2xl bg-destructive/10 text-destructive text-center space-y-3">
+                                    <div
+                                        role="alert"
+                                        className="mb-6 p-4 rounded-2xl bg-destructive/10 text-destructive text-center space-y-3"
+                                    >
                                         <div className="flex items-center justify-center gap-2 font-semibold">
                                             <AlertCircle size={18} />
-                                            Oops!
+                                            Accès interrompu
                                         </div>
                                         <p className="text-xs leading-relaxed">{error}</p>
                                         <Button variant="ghost" size="sm" onClick={requestPermissionAndStart} className="h-8 text-xs underline">
@@ -161,9 +164,10 @@ export function ModernLogin({
                                     <Button
                                         variant="outline"
                                         onClick={requestPermissionAndStart}
+                                        aria-label="Scanner mon bracelet via la caméra"
                                         className="h-48 w-full max-w-[240px] rounded-3xl border-2 border-dashed flex flex-col gap-4 group hover:border-primary/50 bg-muted/20 border-muted-foreground/20"
                                     >
-                                        <div className="p-4 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform">
+                                        <div className="p-4 rounded-full bg-primary/10 text-primary group-hover:scale-110 transition-transform" aria-hidden="true">
                                             <Camera size={40} />
                                         </div>
                                         <div className="space-y-1">
@@ -174,8 +178,11 @@ export function ModernLogin({
                                 )}
 
                                 {(isScanning || isLoading) && (
-                                    <div className="relative aspect-square w-full max-w-[280px] mx-auto rounded-3xl overflow-hidden border-2 border-primary/20 bg-black shadow-2xl">
-                                        <div id="reader" className="w-full h-full"></div>
+                                    <div
+                                        className="relative aspect-square w-full max-w-[280px] mx-auto rounded-3xl overflow-hidden border-2 border-primary/20 bg-black shadow-2xl"
+                                        aria-live="polite"
+                                    >
+                                        <div id="reader" className="w-full h-full" aria-label="Aperçu du scanner de QR Code"></div>
 
                                         {isLoading && (
                                             <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center backdrop-blur-sm z-20">
@@ -187,24 +194,30 @@ export function ModernLogin({
                                         {!isLoading && (
                                             <>
                                                 <div className="absolute top-4 right-4 z-30">
-                                                    <Button variant="ghost" size="icon" onClick={stopScanner} className="h-8 w-8 rounded-full bg-black/50 text-white hover:bg-black/80">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={stopScanner}
+                                                        aria-label="Arrêter la caméra"
+                                                        className="h-8 w-8 rounded-full bg-black/50 text-white hover:bg-black/80"
+                                                    >
                                                         <XCircle size={20} />
                                                     </Button>
                                                 </div>
-                                                <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-0.5 bg-primary/80 shadow-[0_0_15px_var(--primary)] animate-[scan_3s_ease-in-out_infinite] z-10" />
+                                                <div className="absolute inset-x-8 top-1/2 -translate-y-1/2 h-0.5 bg-primary/80 shadow-[0_0_15px_var(--primary)] animate-[scan_3s_ease-in-out_infinite] z-10" aria-hidden="true" />
                                             </>
                                         )}
                                     </div>
                                 )}
 
                                 {scanResult && !isLoading && (
-                                    <div className="text-center space-y-4 py-8">
-                                        <div className="h-16 w-16 mx-auto rounded-full bg-green-500/10 text-green-500 flex items-center justify-center animate-bounce">
+                                    <div className="text-center space-y-4 py-8" aria-live="polite">
+                                        <div className="h-16 w-16 mx-auto rounded-full bg-green-500/10 text-green-500 flex items-center justify-center animate-bounce" aria-hidden="true">
                                             <ScanLine size={32} />
                                         </div>
                                         <div>
-                                            <h3 className="font-bold">Détection réussie</h3>
-                                            <p className="text-xs text-muted-foreground">Patient: {scanResult}</p>
+                                            <h3 className="font-bold text-green-600 dark:text-green-400">Détection réussie</h3>
+                                            <p className="text-xs text-muted-foreground">Patient : <span className="font-mono">{scanResult}</span></p>
                                         </div>
                                     </div>
                                 )}
@@ -214,18 +227,20 @@ export function ModernLogin({
                         <TabsContent value="id" className="space-y-6">
                             <form onSubmit={handleManualSubmit} className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Identifiant Personnel</Label>
+                                    <Label htmlFor="patient-id" className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Identifiant Personnel</Label>
                                     <Input
+                                        id="patient-id"
                                         placeholder="Ex: 882-991"
                                         className="h-14 bg-muted/30 border-none rounded-xl text-lg font-mono text-center tracking-widest"
                                         value={identifier}
                                         onChange={(e) => setIdentifier(e.target.value)}
                                         required
+                                        aria-required="true"
                                     />
                                 </div>
                                 <Button type="submit" className="w-full h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/20" disabled={isLoading || !identifier}>
                                     {isLoading ? "Connexion..." : "Accéder à mon espace"}
-                                    {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
+                                    {!isLoading && <ArrowRight className="ml-2 h-5 w-5" aria-hidden="true" />}
                                 </Button>
                             </form>
                         </TabsContent>

@@ -114,7 +114,14 @@
 
   /* Force obvious focus states for accessibility */
   :focus-visible {
-    @apply outline-2 outline-primary outline-offset-2 ring-0 !important;
+    outline: 2px solid var(--primary) !important;
+    outline-offset: 2px !important;
+  }
+
+  /* Accessibility: High contrast and legible text */
+  html {
+    font-size: 18px;
+    /* Increased base font size for visually impaired users */
   }
 
   /* Accessibility: Disable animations for users who prefer reduced motion */

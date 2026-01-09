@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,11 +15,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Stethoscope, UtensilsCrossed, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { MOCK_STAFF_ACCOUNTS } from "@/lib/mock-data";
 
 export function StaffLogin({
     className,
     ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+    const router = useRouter();
+    const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -26,11 +30,29 @@ export function StaffLogin({
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-        // Simulation d'erreur pour tester l'accessibilité
+
+        // Simulation de détection de rôle
         setTimeout(() => {
             setIsLoading(false);
-            // setError("Identifiants incorrects. Veuillez réessayer.");
-        }, 1500);
+
+            const account = MOCK_STAFF_ACCOUNTS.find(acc => acc.email.toLowerCase() === email.toLowerCase());
+
+            if (account) {
+                if (account.role === "MEDICAL") {
+                    router.push("/staff/medical/dashboard");
+                } else if (account.role === "KITCHEN") {
+                    router.push("/staff/kitchen/dashboard");
+                }
+            } else {
+                // Pour la démo, on accepte tout mais par défaut on va sur médical
+                // sauf si l'email contient "cuisine"
+                if (email.toLowerCase().includes("cuisine")) {
+                    router.push("/staff/kitchen/dashboard");
+                } else {
+                    router.push("/staff/medical/dashboard");
+                }
+            }
+        }, 1200);
     };
 
     return (
@@ -48,7 +70,7 @@ export function StaffLogin({
                     <CardTitle className="text-2xl font-bold tracking-tight">Espace Personnel Staff</CardTitle>
                     <div className="flex justify-center pt-1">
                         <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 text-[10px] font-bold uppercase tracking-widest border border-yellow-500/20">
-                            Interface de démonstration
+                            Démo : med@hopital.fr ou cuisine@hopital.fr
                         </span>
                     </div>
                     <CardDescription className="pt-2">
@@ -72,7 +94,9 @@ export function StaffLogin({
                             <Input
                                 id="staff-email"
                                 type="email"
-                                placeholder="ex: jean.dupont@hopital.fr"
+                                placeholder="ex: med@hopital.fr"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="h-11 bg-muted/30 border-none focus-visible:ring-2 focus-visible:ring-primary/20"
                                 required
                                 aria-required="true"

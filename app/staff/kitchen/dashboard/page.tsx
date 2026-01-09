@@ -13,7 +13,15 @@ import {
     Flame,
     LayoutGrid,
     List,
-    CookingPot
+    CookingPot,
+    Plus,
+    CalendarDays,
+    Calendar as CalendarIcon,
+    ChevronLeft,
+    ChevronRight,
+    Coffee,
+    Sun,
+    Moon
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -29,14 +37,67 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish } from "@/lib/mock-data";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish, ALLERGENS_LIST } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
+    const [dishes, setDishes] = useState<Dish[]>(MOCK_DISHES);
+    const [isAddDishOpen, setIsAddDishOpen] = useState(false);
+
+    // New dish form state
+    const [newDish, setNewDish] = useState<Partial<Dish>>({
+        name: "",
+        category: "PLAT",
+        allergens: [],
+        nutritionalInfo: { calories: 0, protein: 0, carbs: 0, fat: 0 }
+    });
+
     const totalMeals = MOCK_PATIENTS.length;
     const preparedMeals = MOCK_PATIENTS.filter(p => p.status === "ADMITTED").length;
     const progress = (preparedMeals / totalMeals) * 100;
+
+    const handleAddDish = (e: React.FormEvent) => {
+        e.preventDefault();
+        const id = `DISH-${Math.floor(100 + Math.random() * 900)}`;
+        const dish: Dish = {
+            ...newDish as Dish,
+            id,
+        };
+        setDishes([dish, ...dishes]);
+        setNewDish({
+            name: "",
+            category: "PLAT",
+            allergens: [],
+            nutritionalInfo: { calories: 0, protein: 0, carbs: 0, fat: 0 }
+        });
+        setIsAddDishOpen(false);
+    };
+
+    const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+    const meals = [
+        { name: "Petit Déjeuner", icon: <Coffee size={14} /> },
+        { name: "Déjeuner", icon: <Sun size={14} /> },
+        { name: "Dîner", icon: <Moon size={14} /> }
+    ];
 
     return (
         <div className="flex flex-col min-h-screen bg-muted/30">
@@ -134,24 +195,107 @@ export default function KitchenDashboard() {
                     </Card>
                 </div>
 
-                {/* Tabbed Content: Preparation or Inventory */}
+                {/* Tabbed Content: Preparation, Recipes, Planning */}
                 <Tabs defaultValue="production" className="w-full">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between mb-4 flex-wrap gap-4">
                         <TabsList className="bg-muted/50 p-1 rounded-2xl border border-border/50">
                             <TabsTrigger value="production" className="rounded-xl px-6 text-xs font-bold data-[state=active]:bg-orange-500 data-[state=active]:text-white">Production</TabsTrigger>
+                            <TabsTrigger value="planning" className="rounded-xl px-6 text-xs font-bold data-[state=active]:bg-orange-500 data-[state=active]:text-white">Calendrier Menus</TabsTrigger>
                             <TabsTrigger value="recipes" className="rounded-xl px-6 text-xs font-bold data-[state=active]:bg-orange-500 data-[state=active]:text-white">Fiches Recettes</TabsTrigger>
                         </TabsList>
 
                         <div className="flex items-center gap-2">
-                            <div className="relative w-64 hidden md:block">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
-                                <Input
-                                    placeholder="Chercher une recette..."
-                                    className="pl-9 h-10 bg-muted/50 border-none rounded-xl text-xs"
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                            </div>
+                            <Dialog open={isAddDishOpen} onOpenChange={setIsAddDishOpen}>
+                                <DialogTrigger asChild>
+                                    <Button className="h-10 rounded-xl bg-orange-600 hover:bg-orange-700 shadow-lg shadow-orange-500/20 font-bold gap-2 text-xs">
+                                        <Plus size={16} />
+                                        Ajouter un plat
+                                    </Button>
+                                </DialogTrigger>
+                                <DialogContent className="sm:max-w-[425px] rounded-3xl border-none shadow-2xl">
+                                    <DialogHeader>
+                                        <DialogTitle className="text-2xl font-black">Nouveau Plat</DialogTitle>
+                                        <DialogDescription>Ajoutez une nouvelle recette à la bibliothèque.</DialogDescription>
+                                    </DialogHeader>
+                                    <form onSubmit={handleAddDish} className="space-y-4 py-4">
+                                        <div className="space-y-2">
+                                            <Label htmlFor="dishName" className="font-bold">Nom du plat</Label>
+                                            <Input
+                                                id="dishName"
+                                                placeholder="Ex: Blanquette de Veau"
+                                                className="rounded-xl bg-muted/30 border-none"
+                                                value={newDish.name}
+                                                onChange={(e) => setNewDish({ ...newDish, name: e.target.value })}
+                                                required
+                                            />
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="category" className="font-bold">Catégorie</Label>
+                                            <Select
+                                                value={newDish.category}
+                                                onValueChange={(v: any) => setNewDish({ ...newDish, category: v })}
+                                            >
+                                                <SelectTrigger className="rounded-xl bg-muted/30 border-none">
+                                                    <SelectValue placeholder="PLAT" />
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-xl">
+                                                    <SelectItem value="ENTREE">Entrée</SelectItem>
+                                                    <SelectItem value="PLAT">Plat Principal</SelectItem>
+                                                    <SelectItem value="DESSERT">Dessert</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="font-bold">Allergènes Présents</Label>
+                                            <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto pr-2 scrollbar-thin">
+                                                {ALLERGENS_LIST.map(a => (
+                                                    <div key={a} className="flex items-center gap-2">
+                                                        <Checkbox
+                                                            id={`new-dish-${a}`}
+                                                            checked={newDish.allergens?.includes(a)}
+                                                            onCheckedChange={(checked) => {
+                                                                const current = newDish.allergens || [];
+                                                                setNewDish({
+                                                                    ...newDish,
+                                                                    allergens: checked
+                                                                        ? [...current, a]
+                                                                        : current.filter(item => item !== a)
+                                                                });
+                                                            }}
+                                                        />
+                                                        <Label htmlFor={`new-dish-${a}`} className="text-xs cursor-pointer">{a}</Label>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Calories (kcal)</Label>
+                                                <Input
+                                                    type="number"
+                                                    className="rounded-xl bg-muted/30 border-none"
+                                                    value={newDish.nutritionalInfo?.calories}
+                                                    onChange={(e) => setNewDish({ ...newDish, nutritionalInfo: { ...newDish.nutritionalInfo!, calories: parseInt(e.target.value) } })}
+                                                />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <Label className="text-[10px] uppercase font-bold text-muted-foreground">Protéines (g)</Label>
+                                                <Input
+                                                    type="number"
+                                                    className="rounded-xl bg-muted/30 border-none"
+                                                    value={newDish.nutritionalInfo?.protein}
+                                                    onChange={(e) => setNewDish({ ...newDish, nutritionalInfo: { ...newDish.nutritionalInfo!, protein: parseInt(e.target.value) } })}
+                                                />
+                                            </div>
+                                        </div>
+                                        <DialogFooter className="pt-4">
+                                            <Button type="submit" className="w-full h-12 rounded-2xl bg-orange-600 font-bold shadow-xl shadow-orange-500/20">
+                                                Créer le plat
+                                            </Button>
+                                        </DialogFooter>
+                                    </form>
+                                </DialogContent>
+                            </Dialog>
                             <Button variant="outline" size="sm" className="rounded-xl h-10 gap-2 font-bold text-xs bg-background/50">
                                 <Download size={16} /> Export
                             </Button>
@@ -166,12 +310,12 @@ export default function KitchenDashboard() {
                                         <TableHead className="py-4 pl-6 font-black uppercase text-[10px] tracking-widest text-muted-foreground">Plat / Recette</TableHead>
                                         <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Catégorie</TableHead>
                                         <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground text-center">Quantité</TableHead>
-                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Allergènes Présents</TableHead>
-                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-6">Statut</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground">Allergènes</TableHead>
+                                        <TableHead className="font-black uppercase text-[10px] tracking-widest text-muted-foreground text-right pr-6">Action</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {MOCK_DISHES.map((dish) => (
+                                    {dishes.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())).map((dish) => (
                                         <TableRow key={dish.id} className="group hover:bg-orange-500/[0.02] border-muted/30">
                                             <TableCell className="py-5 pl-6">
                                                 <div>
@@ -212,9 +356,58 @@ export default function KitchenDashboard() {
                         </Card>
                     </TabsContent>
 
+                    <TabsContent value="planning" className="mt-0">
+                        <Card className="border-none shadow-xl shadow-orange-500/5 bg-card/50 backdrop-blur-md rounded-3xl overflow-hidden p-6">
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-4">
+                                    <h2 className="text-xl font-black">Semaine 02</h2>
+                                    <div className="flex bg-muted/50 rounded-xl p-1">
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><ChevronLeft size={16} /></Button>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg"><ChevronRight size={16} /></Button>
+                                    </div>
+                                </div>
+                                <Button className="rounded-xl bg-orange-600 font-bold text-xs gap-2">
+                                    <CalendarIcon size={16} /> Publier le menu
+                                </Button>
+                            </div>
+
+                            <div className="grid grid-cols-8 gap-4 overflow-x-auto pb-4 scrollbar-thin">
+                                <div className="pt-10 space-y-24 min-w-[120px]">
+                                    {meals.map(meal => (
+                                        <div key={meal.name} className="flex items-center gap-2 text-muted-foreground h-20">
+                                            {meal.icon}
+                                            <span className="text-[10px] font-black uppercase tracking-widest">{meal.name}</span>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {days.map((day, idx) => (
+                                    <div key={day} className="space-y-4 min-w-[140px]">
+                                        <div className={cn(
+                                            "text-center p-2 rounded-xl transition-colors",
+                                            idx === 0 ? "bg-orange-500 text-white" : "bg-muted/30"
+                                        )}>
+                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none">{day}</p>
+                                            <p className="text-lg font-black">{12 + idx}</p>
+                                        </div>
+
+                                        {meals.map(meal => (
+                                            <div key={`${day}-${meal.name}`} className="h-20 p-2 rounded-2xl bg-white/50 dark:bg-black/20 border border-dashed border-muted-foreground/20 hover:border-orange-500/50 hover:bg-orange-500/5 transition-all cursor-pointer group flex flex-col justify-center items-center gap-1">
+                                                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-muted-foreground group-hover:bg-orange-100 group-hover:text-orange-500">
+                                                    <Plus size={14} />
+                                                </div>
+                                                <span className="text-[8px] font-bold text-muted-foreground uppercase">Assigner</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ))}
+                            </div>
+                        </Card>
+                    </TabsContent>
+
                     <TabsContent value="recipes">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {MOCK_DISHES.map(dish => (
+                            {dishes.filter(d => d.name.toLowerCase().includes(searchTerm.toLowerCase())).map(dish => (
                                 <Card key={dish.id} className="border-none shadow-lg bg-card/50 overflow-hidden group hover:scale-[1.02] transition-transform">
                                     <div className="h-32 bg-muted relative">
                                         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
@@ -253,7 +446,7 @@ export default function KitchenDashboard() {
             </main>
 
             <footer className="p-8 text-center text-[10px] text-muted-foreground uppercase font-black tracking-[0.3em] opacity-30">
-                OISHII SYSTEMS • KITCHEN OPS v2.0 • FORWARD THINKING
+                OISHII SYSTEMS • KITCHEN OPS v2.1 • FORWARD THINKING
             </footer>
         </div>
     );

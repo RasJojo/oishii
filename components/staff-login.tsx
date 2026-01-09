@@ -83,7 +83,7 @@ export function StaffLogin({
                     </form>
                 </CardContent>
                 <div className="p-4 bg-muted/10 text-center">
-                    <Link href="/auth/login" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1">
+                    <Link href="/patient" className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1">
                         Vous êtes un patient ? <ArrowRight size={12} />
                     </Link>
                 </div>

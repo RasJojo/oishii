@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +21,7 @@ export function ModernLogin({
     className,
     ...props
 }: React.ComponentPropsWithoutRef<"div">) {
+    const router = useRouter();
     const [identifier, setIdentifier] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [scanResult, setScanResult] = useState<string | null>(null);
@@ -41,13 +43,10 @@ export function ModernLogin({
         setIsScanning(true);
 
         try {
-            // 1. Force Browser Permission Dialog
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-            // Stop the test stream immediately
             stream.getTracks().forEach(track => track.stop());
             setHasPermission(true);
 
-            // 2. Small delay to ensure the DOM element #reader is mounted
             setTimeout(async () => {
                 try {
                     const scanner = new Html5Qrcode("reader");
@@ -59,7 +58,6 @@ export function ModernLogin({
                         aspectRatio: 1.0
                     };
 
-                    // Try back camera first, then fall back to any available camera
                     try {
                         await scanner.start(
                             { facingMode: "environment" },
@@ -68,7 +66,6 @@ export function ModernLogin({
                             onScanFailure
                         );
                     } catch (e) {
-                        console.warn("Back camera fail, trying default camera...");
                         await scanner.start(
                             { facingMode: "user" },
                             config,
@@ -83,7 +80,6 @@ export function ModernLogin({
             }, 300);
 
         } catch (err: any) {
-            console.error("Permission denied:", err);
             setHasPermission(false);
             setError("Accès caméra refusé. Veuillez autoriser l'accès dans les réglages de votre navigateur.");
             setIsScanning(false);
@@ -98,13 +94,11 @@ export function ModernLogin({
         }
         setTimeout(() => {
             setIsLoading(false);
-            // Logic for backend redirect here
-        }, 1500);
+            router.push(`/patient/${decodedText}/dashboard`);
+        }, 1200);
     };
 
-    const onScanFailure = () => {
-        // Silent fail during scan cycles
-    };
+    const onScanFailure = () => { };
 
     const stopScanner = async () => {
         if (html5QrCode.current && html5QrCode.current.isScanning) {
@@ -115,6 +109,16 @@ export function ModernLogin({
                 console.error("Failed to stop", err);
             }
         }
+    };
+
+    const handleManualSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!identifier) return;
+        setIsLoading(true);
+        setTimeout(() => {
+            setIsLoading(false);
+            router.push(`/patient/${identifier}/dashboard`);
+        }, 1000);
     };
 
     return (
@@ -176,7 +180,7 @@ export function ModernLogin({
                                         {isLoading && (
                                             <div className="absolute inset-0 bg-background/90 flex flex-col items-center justify-center backdrop-blur-sm z-20">
                                                 <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
-                                                <p className="text-sm font-bold">Patient identifié...</p>
+                                                <p className="text-sm font-bold">Connexion en cours...</p>
                                             </div>
                                         )}
 
@@ -200,7 +204,7 @@ export function ModernLogin({
                                         </div>
                                         <div>
                                             <h3 className="font-bold">Détection réussie</h3>
-                                            <p className="text-xs text-muted-foreground">ID: {scanResult}</p>
+                                            <p className="text-xs text-muted-foreground">Patient: {scanResult}</p>
                                         </div>
                                     </div>
                                 )}
@@ -208,7 +212,7 @@ export function ModernLogin({
                         </TabsContent>
 
                         <TabsContent value="id" className="space-y-6">
-                            <form onSubmit={(e) => { e.preventDefault(); setIsLoading(true); }} className="space-y-4">
+                            <form onSubmit={handleManualSubmit} className="space-y-4">
                                 <div className="space-y-2">
                                     <Label className="text-xs uppercase tracking-widest text-muted-foreground ml-1">Identifiant Personnel</Label>
                                     <Input
@@ -220,7 +224,7 @@ export function ModernLogin({
                                     />
                                 </div>
                                 <Button type="submit" className="w-full h-14 rounded-2xl text-base font-bold shadow-lg shadow-primary/20" disabled={isLoading || !identifier}>
-                                    {isLoading ? "Connexion..." : "Accéder à ma planification"}
+                                    {isLoading ? "Connexion..." : "Accéder à mon espace"}
                                     {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
                                 </Button>
                             </form>

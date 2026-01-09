@@ -21,7 +21,7 @@ export default function Home() {
             <span className="font-bold text-xl tracking-tight">OISHII</span>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/auth/login/staff">
+            <Link href="/staff/login">
               <Button variant="ghost" size="sm" className="rounded-xl text-xs font-semibold">
                 Accès Staff
               </Button>
@@ -53,7 +53,7 @@ export default function Home() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-8">
-            <Link href="/auth/login">
+            <Link href="/patient">
               <Button size="lg" className="h-14 px-8 rounded-2xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95 text-base">
                 Espace Patient
                 <ArrowRight className="ml-2 h-5 w-5" />

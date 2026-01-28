@@ -32,7 +32,7 @@ export default function PatientLoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 font-sans">
-      <div className="w-full max-w-[500px] space-y-10">
+      <main className="w-full max-w-[500px] space-y-10">
         {/* Header for Visually Impaired - Clear & Big */}
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-6 py-2 border-4 border-primary bg-primary text-primary-foreground mb-4">
@@ -108,7 +108,7 @@ export default function PatientLoginPage() {
             Activer la synthèse vocale
           </Button>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

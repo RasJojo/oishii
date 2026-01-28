@@ -1,24 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
+    Lock,
+    Mail,
+    ArrowRight,
+    Loader2,
+    ShieldCheck,
+    AlertCircle,
+    Stethoscope,
+    ChefHat,
+    ChevronRight,
+    Terminal
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Stethoscope, UtensilsCrossed, ShieldCheck, ArrowRight, AlertCircle } from "lucide-react";
-import Link from "next/link";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { MOCK_STAFF_ACCOUNTS } from "@/lib/mock-data";
+import { cn } from "@/lib/utils";
 
-export function StaffLogin({
-    className,
-    ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export default function StaffLogin() {
+    const router = useRouter();
+    const [email, setEmail] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -26,99 +31,140 @@ export function StaffLogin({
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-        // Simulation d'erreur pour tester l'accessibilité
+
+        // Simulation de détection de rôle
         setTimeout(() => {
             setIsLoading(false);
-            // setError("Identifiants incorrects. Veuillez réessayer.");
-        }, 1500);
+
+            const account = MOCK_STAFF_ACCOUNTS.find(acc => acc.email.toLowerCase() === email.toLowerCase());
+
+            if (account) {
+                if (account.role === "MEDICAL") {
+                    router.push("/staff/medical/dashboard");
+                } else if (account.role === "KITCHEN") {
+                    router.push("/staff/kitchen/dashboard");
+                }
+            } else {
+                // Pour la démo, on accepte tout mais par défaut on va sur médical
+                // sauf si l'email contient "cuisine"
+                if (email.toLowerCase().includes("cuisine")) {
+                    router.push("/staff/kitchen/dashboard");
+                } else {
+                    router.push("/staff/medical/dashboard");
+                }
+            }
+        }, 1200);
     };
 
     return (
-        <div className={cn("flex flex-col gap-6", className)} {...props}>
-            <Card className="overflow-hidden border-none shadow-2xl bg-card/50 backdrop-blur-md">
-                <CardHeader className="space-y-1 text-center pb-8 border-b border-muted/50">
-                    <div className="flex justify-center gap-4 mb-4" aria-hidden="true">
-                        <div className="p-2 rounded-lg bg-blue-500/10 text-blue-500">
-                            <Stethoscope size={24} />
-                        </div>
-                        <div className="p-2 rounded-lg bg-orange-500/10 text-orange-500">
-                            <UtensilsCrossed size={24} />
-                        </div>
+        <div className="min-h-screen flex items-center justify-center bg-background p-4 font-sans">
+            <div className="w-full max-w-[450px] space-y-8">
+                {/* Logo / Header */}
+                <div className="text-center space-y-2">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 border-2 border-primary bg-primary/5 text-primary mb-4">
+                        <Terminal size={20} />
+                        <span className="font-black tracking-[0.3em] text-sm">OISHII SYSTEMS</span>
                     </div>
-                    <CardTitle className="text-2xl font-bold tracking-tight">Espace Personnel Staff</CardTitle>
-                    <div className="flex justify-center pt-1">
-                        <span className="px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-500 text-[10px] font-bold uppercase tracking-widest border border-yellow-500/20">
-                            Interface de démonstration
-                        </span>
-                    </div>
-                    <CardDescription className="pt-2">
-                        Accès réservé aux équipes Médicales et Cuisine
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="pt-8">
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                        {error && (
-                            <div
-                                role="alert"
-                                className="p-3 rounded-lg bg-destructive/10 text-destructive text-sm flex items-center gap-2 font-medium"
-                            >
-                                <AlertCircle size={16} />
-                                {error}
-                            </div>
-                        )}
+                    <h1 className="text-3xl font-black uppercase tracking-tight">Accès Personnel</h1>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Identification requise • Gateway v3.1</p>
+                </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="staff-email">Email professionnel</Label>
-                            <Input
-                                id="staff-email"
-                                type="email"
-                                placeholder="ex: jean.dupont@hopital.fr"
-                                className="h-11 bg-muted/30 border-none focus-visible:ring-2 focus-visible:ring-primary/20"
-                                required
-                                aria-required="true"
-                            />
+                <Card className="border-4 border-border bg-card shadow-[12px_12px_0px_0px_rgba(0,0,0,0.05)] dark:shadow-[12px_12px_0px_0px_rgba(255,255,255,0.02)] rounded-none">
+                    <CardHeader className="p-8 border-b-2 border-border bg-muted/20">
+                        <div className="flex items-center gap-3">
+                            <ShieldCheck size={20} className="text-primary" />
+                            <CardTitle className="text-lg font-black uppercase tracking-tight">Authentification</CardTitle>
                         </div>
-                        <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                                <Label htmlFor="staff-password">Mot de passe</Label>
-                                <Link
-                                    href="/staff/forgot-password"
-                                    className="text-xs text-primary hover:underline"
-                                    aria-label="Réinitialiser mon mot de passe"
+                    </CardHeader>
+
+                    <CardContent className="p-8">
+                        <form onSubmit={handleSubmit} className="space-y-6">
+                            <div className="space-y-3">
+                                <Label htmlFor="email" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Identifiant Email</Label>
+                                <div className="relative group">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        placeholder="NOM.P@HOPITAL.FR"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        required
+                                        className="pl-12 h-14 bg-muted/10 border-2 border-border font-bold uppercase tracking-tight rounded-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-3">
+                                <Label htmlFor="pass" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground ml-1">Mot de Passe</Label>
+                                <div className="relative group">
+                                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                                    <Input
+                                        id="pass"
+                                        type="password"
+                                        placeholder="••••••••"
+                                        required
+                                        className="pl-12 h-14 bg-muted/10 border-2 border-border font-bold rounded-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary"
+                                    />
+                                </div>
+                            </div>
+
+                            {error && (
+                                <div
+                                    className="p-4 border-2 border-destructive bg-destructive/10 text-destructive text-xs font-black uppercase flex items-center gap-3"
+                                    role="alert"
                                 >
-                                    Oublié ?
-                                </Link>
-                            </div>
-                            <Input
-                                id="staff-password"
-                                type="password"
-                                className="h-11 bg-muted/30 border-none focus-visible:ring-2 focus-visible:ring-primary/20"
-                                required
-                                aria-required="true"
-                            />
-                        </div>
-                        <Button
-                            type="submit"
-                            className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98]"
-                            disabled={isLoading}
-                        >
-                            {isLoading ? "Vérification..." : "Accéder au Dashboard"}
-                        </Button>
-                    </form>
-                </CardContent>
-                <nav className="p-4 bg-muted/10 text-center" aria-label="Liens alternatifs">
-                    <Link
-                        href="/patient"
-                        className="text-xs text-muted-foreground hover:text-primary transition-colors flex items-center justify-center gap-1 font-medium"
-                    >
-                        Vous êtes un patient ? <ArrowRight size={12} aria-hidden="true" />
-                    </Link>
-                </nav>
-            </Card>
+                                    <AlertCircle size={18} />
+                                    {error}
+                                </div>
+                            )}
 
-            <div className="flex items-center justify-center gap-2 text-[10px] text-muted-foreground uppercase tracking-widest opacity-50" aria-label="Sécurité">
-                <ShieldCheck size={12} aria-hidden="true" />
-                Connexion Sécurisée AES-256
+                            <Button
+                                type="submit"
+                                className="w-full h-14 bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] text-xs rounded-none shadow-lg hover:translate-y-[-2px] active:translate-y-[0px] transition-all focus-visible:ring-4 focus-visible:ring-primary/40"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                        VÉRIFICATION...
+                                    </>
+                                ) : (
+                                    <>
+                                        CONNEXION SYSTÈME
+                                        <ArrowRight className="ml-2 h-5 w-5" />
+                                    </>
+                                )}
+                            </Button>
+                        </form>
+                    </CardContent>
+
+                    <CardFooter className="p-8 pt-0 flex flex-col gap-4">
+                        <div className="w-full border-t-2 border-border pt-6 flex flex-col gap-3">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Accès de démonstration</p>
+                            <div className="grid grid-cols-2 gap-2">
+                                <Button
+                                    variant="outline"
+                                    className="h-10 text-[9px] font-black uppercase border-2 border-border rounded-none hover:bg-muted"
+                                    onClick={() => setEmail("med@hopital.fr")}
+                                >
+                                    <Stethoscope size={14} className="mr-2" /> MÉDICAL
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    className="h-10 text-[9px] font-black uppercase border-2 border-border rounded-none hover:bg-muted"
+                                    onClick={() => setEmail("cuisine@hopital.fr")}
+                                >
+                                    <ChefHat size={14} className="mr-2" /> CUISINE
+                                </Button>
+                            </div>
+                        </div>
+                    </CardFooter>
+                </Card>
+
+                <p className="text-center text-[9px] font-black uppercase tracking-[0.4em] opacity-30">
+                    OISHII SYSTEMS • CRYPTO-SECURED • v3.1
+                </p>
             </div>
         </div>
     );

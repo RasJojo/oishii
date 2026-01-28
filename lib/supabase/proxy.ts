@@ -13,6 +13,13 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
+  // Redirection automatique des anciennes routes vers les nouvelles
+  if (request.nextUrl.pathname.startsWith("/auth")) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/staff/login";
+    return NextResponse.redirect(url);
+  }
+
   // With Fluid compute, don't put this client in a global environment
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
@@ -50,12 +57,12 @@ export async function updateSession(request: NextRequest) {
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !request.nextUrl.pathname.startsWith("/staff") &&
+    !request.nextUrl.pathname.startsWith("/patient")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
+    url.pathname = "/staff/login";
     return NextResponse.redirect(url);
   }
 

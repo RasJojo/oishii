@@ -31,7 +31,12 @@ export default function Home() {
 
       {/* Hero Section */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-12 md:py-24 max-w-7xl mx-auto w-full">
-        <div className="space-y-8 max-w-4xl">
+        <div 
+          className="space-y-8 max-w-4xl outline-none focus-visible:ring-4 focus-visible:ring-primary/20 focus-visible:rounded-lg p-2" 
+          tabIndex={0} 
+          role="region" 
+          aria-label="Présentation OISHII"
+        >
           <div className="inline-flex items-center gap-2 px-4 py-1.5 border border-primary/20 bg-primary/5 text-primary text-[10px] font-black uppercase tracking-[0.2em]">
             <Zap size={14} className="animate-pulse" />
             Système Centralisé de Restauration Hospitalière

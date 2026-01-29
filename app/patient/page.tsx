@@ -25,6 +25,7 @@ export default function PatientLoginPage() {
     e.preventDefault();
     setIsLoading(true);
     // Simulation d'identification par bracelet
+    localStorage.setItem("currentPatientId", id);
     setTimeout(() => {
       router.push("/patient/dashboard");
     }, 1000);

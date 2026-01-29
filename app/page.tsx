@@ -67,7 +67,7 @@ export default function Home() {
           </section>
 
           <section className="p-10 bg-card flex flex-col items-center text-center space-y-4 hover:bg-muted/30 transition-colors border-r border-border md:border-r last:border-r-0">
-            <div className="w-14 h-14 border border-orange-500/20 bg-orange-500/10 text-orange-600 flex items-center justify-center mb-2" aria-hidden="true">
+            <div className="w-14 h-14 border border-orange-600/20 bg-orange-600/10 text-orange-600 flex items-center justify-center mb-2" aria-hidden="true">
               <UtensilsCrossed size={28} />
             </div>
             <h2 className="font-black text-base uppercase tracking-widest">Cuisine Centrale</h2>

@@ -112,7 +112,7 @@ export default function PatientDashboard() {
                 {/* Meal Selection Tabs - Large touch/click areas */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-black uppercase tracking-widest border-b-2 border-border pb-2">Choisissez votre Menu</h2>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Type de repas">
                         {[
                             { name: "Petit Déjeuner", icon: Coffee },
                             { name: "Déjeuner", icon: Sun },
@@ -121,14 +121,17 @@ export default function PatientDashboard() {
                             <Button
                                 key={m.name}
                                 onClick={() => setSelectedMeal(m.name)}
+                                role="radio"
+                                aria-checked={selectedMeal === m.name}
+                                aria-label={`Repas : ${m.name}`}
                                 variant={selectedMeal === m.name ? "default" : "outline"}
                                 className={cn(
-                                    "h-20 flex flex-col gap-2 rounded-none border-2 font-black uppercase text-[10px] tracking-widest",
+                                    "h-20 flex flex-col gap-2 rounded-none border-2 font-black uppercase text-[10px] tracking-widest focus-visible:ring-4 focus-visible:ring-primary",
                                     selectedMeal === m.name ? "border-primary shadow-lg" : "border-border"
                                 )}
                             >
-                                <m.icon size={24} />
-                                {m.name}
+                                <m.icon size={24} aria-hidden="true" />
+                                <span aria-hidden="true">{m.name}</span>
                             </Button>
                         ))}
                     </div>
@@ -144,7 +147,7 @@ export default function PatientDashboard() {
                                     Votre {cat.toLowerCase()}
                                 </h3>
 
-                                <div className="grid grid-cols-1 gap-4">
+                                <div className="grid grid-cols-1 gap-4" role="radiogroup" aria-labelledby={`title-${cat}`}>
                                     {availableDishes.length > 0 ? (
                                         availableDishes.map((dish) => {
                                             const isSelected = selections[cat]?.id === dish.id;
@@ -152,16 +155,19 @@ export default function PatientDashboard() {
                                                 <button
                                                     key={dish.id}
                                                     onClick={() => handleSelect(cat, dish)}
+                                                    role="radio"
+                                                    aria-checked={isSelected}
+                                                    aria-label={`${dish.name}, ${dish.nutritionalInfo.calories} calories. ${isSelected ? "Sélectionné" : "Cliquer pour sélectionner"}`}
                                                     className={cn(
-                                                        "group text-left p-6 border-2 transition-all flex items-center justify-between focus-visible:ring-4 focus-visible:ring-primary focus-visible:outline-none",
+                                                        "group text-left p-6 border-2 transition-all flex items-center justify-between focus-visible:ring-4 focus-visible:ring-primary focus-visible:outline-none w-full",
                                                         isSelected
                                                             ? "border-primary bg-primary/5 shadow-md"
                                                             : "border-border hover:border-primary/50"
                                                     )}
                                                 >
                                                     <div className="space-y-1 flex-1">
-                                                        <p className="text-xl font-black uppercase group-hover:text-primary transition-colors">{dish.name}</p>
-                                                        <div className="flex gap-4">
+                                                        <p className="text-xl font-black uppercase group-hover:text-primary transition-colors" aria-hidden="true">{dish.name}</p>
+                                                        <div className="flex gap-4" aria-hidden="true">
                                                             <div className="flex items-center gap-1 text-xs font-bold text-muted-foreground uppercase">
                                                                 <Clock size={14} /> 12:30
                                                             </div>
@@ -170,8 +176,10 @@ export default function PatientDashboard() {
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    <div className={cn(
-                                                        "h-10 w-10 border-2 flex items-center justify-center transition-colors",
+                                                    <div 
+                                                        aria-hidden="true"
+                                                        className={cn(
+                                                        "h-10 w-10 border-2 flex items-center justify-center transition-colors shrink-0",
                                                         isSelected ? "border-primary bg-primary text-white" : "border-border bg-white"
                                                     )}>
                                                         {isSelected && <CheckCircle2 size={24} />}

@@ -11,49 +11,58 @@ import {
     AlertCircle,
     Stethoscope,
     ChefHat,
-    ChevronRight,
     Terminal
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { MOCK_STAFF_ACCOUNTS } from "@/lib/mock-data";
-import { cn } from "@/lib/utils";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { createClient } from "@/lib/supabase/client";
 
 export default function StaffLogin() {
     const router = useRouter();
     const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError(null);
         setIsLoading(true);
 
-        // Simulation de détection de rôle
-        setTimeout(() => {
-            setIsLoading(false);
+        try {
+            const supabase = createClient();
+            
+            // Tentative de connexion réelle à Supabase
+            const { data, error: authError } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
 
-            const account = MOCK_STAFF_ACCOUNTS.find(acc => acc.email.toLowerCase() === email.toLowerCase());
-
-            if (account) {
-                if (account.role === "MEDICAL") {
-                    router.push("/staff/medical/dashboard");
-                } else if (account.role === "KITCHEN") {
-                    router.push("/staff/kitchen/dashboard");
-                }
-            } else {
-                // Pour la démo, on accepte tout mais par défaut on va sur médical
-                // sauf si l'email contient "cuisine"
-                if (email.toLowerCase().includes("cuisine")) {
-                    router.push("/staff/kitchen/dashboard");
-                } else {
-                    router.push("/staff/medical/dashboard");
-                }
+            if (authError) {
+                throw authError; // Lève l'erreur pour la catcher en bas
             }
-        }, 1200);
+
+            // Si connexion réussie, redirection basée sur l'email
+            // (En attendant d'avoir les rôles dans la BDD)
+            if (email.toLowerCase().includes("cuisine")) {
+                router.push("/staff/kitchen/dashboard");
+            } else {
+                router.push("/staff/medical/dashboard");
+            }
+
+        } catch (err: any) {
+            console.error("Login Check Failed:", err);
+            // Message d'erreur convivial
+            if (err.message === "Invalid login credentials") {
+                setError("Email ou mot de passe incorrect.");
+            } else {
+                setError(err.message || "Erreur de connexion au serveur.");
+            }
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -103,6 +112,8 @@ export default function StaffLogin() {
                                         id="pass"
                                         type="password"
                                         placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
                                         required
                                         className="pl-12 h-14 bg-muted/10 border-2 border-border font-bold rounded-none focus-visible:ring-2 focus-visible:ring-primary/20 focus-visible:border-primary"
                                     />
@@ -141,19 +152,25 @@ export default function StaffLogin() {
 
                     <CardFooter className="p-8 pt-0 flex flex-col gap-4">
                         <div className="w-full border-t-2 border-border pt-6 flex flex-col gap-3">
-                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Accès de démonstration</p>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Pré-remplissage Démo (Nécessite compte actif)</p>
                             <div className="grid grid-cols-2 gap-2">
                                 <Button
                                     variant="outline"
                                     className="h-10 text-[9px] font-black uppercase border-2 border-border rounded-none hover:bg-muted"
-                                    onClick={() => setEmail("med@hopital.fr")}
+                                    onClick={() => {
+                                        setEmail("med@hopital.fr");
+                                        setPassword("password123"); 
+                                    }}
                                 >
                                     <Stethoscope size={14} className="mr-2" /> MÉDICAL
                                 </Button>
                                 <Button
                                     variant="outline"
                                     className="h-10 text-[9px] font-black uppercase border-2 border-border rounded-none hover:bg-muted"
-                                    onClick={() => setEmail("cuisine@hopital.fr")}
+                                    onClick={() => {
+                                        setEmail("cuisine@hopital.fr");
+                                        setPassword("password123");
+                                    }}
                                 >
                                     <ChefHat size={14} className="mr-2" /> CUISINE
                                 </Button>

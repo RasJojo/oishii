@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Plus, X, AlertTriangle, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -9,9 +9,24 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dish, Ingredient, ALLERGENS_LIST, detectAllergensFromIngredients } from "@/lib/mock-data";
-import { INGREDIENTS_DB, IngredientRef } from "@/lib/ingredients-db";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+
+// Interface for DB Ingredient
+interface IngredientRef {
+    id: string;
+    name: string;
+    description?: string;
+    allergen?: string; // Back to string matching because DB table has no allergen_id column
+    default_unit: string;
+}
+
+// Interface for Allergen
+interface AllergenRef {
+    id: string;
+    name: string;
+}
 
 interface DishCreationModalProps {
     open: boolean;
@@ -28,6 +43,32 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
     const [protein, setProtein] = useState(0);
     const [carbs, setCarbs] = useState(0);
     const [fat, setFat] = useState(0);
+    
+    // DB State
+    const [ingredientsCatalog, setIngredientsCatalog] = useState<IngredientRef[]>([]);
+    const [allergensList, setAllergensList] = useState<AllergenRef[]>([]);
+
+    // Fetch Reference Data (Ingredients & Allergens)
+    useEffect(() => {
+        const fetchData = async () => {
+            const supabase = createClient();
+            
+            // 1. Fetch Allergens (ID + Name)
+            const { data: allergensData } = await supabase.from('allergens').select('id, name');
+            if (allergensData) {
+                setAllergensList(allergensData);
+            }
+
+            // 2. Fetch Ingredients
+            const { data: ingredientsData } = await supabase.from('ingredients').select('*');
+            if (ingredientsData) {
+                setIngredientsCatalog(ingredientsData);
+            }
+        };
+        if (open) {
+            fetchData();
+        }
+    }, [open]);
 
     // État pour le nouvel ingrédient en cours d'ajout
     const [newIngredient, setNewIngredient] = useState<Partial<Ingredient>>({
@@ -42,16 +83,16 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
     
     const suggestions = useMemo(() => {
         if (!newIngredient.name || newIngredient.name.length < 2) return [];
-        return INGREDIENTS_DB.filter(ing => 
+        return ingredientsCatalog.filter(ing => 
             ing.name.toLowerCase().includes(newIngredient.name!.toLowerCase())
         ).slice(0, 5);
-    }, [newIngredient.name]);
+    }, [newIngredient.name, ingredientsCatalog]);
 
     const handleSelectSuggestion = (suggestion: IngredientRef) => {
         setNewIngredient({
             ...newIngredient,
             name: suggestion.name,
-            unit: suggestion.defaultUnit,
+            unit: suggestion.default_unit,
             allergen: suggestion.allergen
         });
         setShowSuggestions(false);
@@ -59,7 +100,12 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
 
     const handleAddIngredient = () => {
         if (newIngredient.name && newIngredient.quantity && newIngredient.unit) {
-            setIngredients([...ingredients, newIngredient as Ingredient]);
+            setIngredients([...ingredients, {
+                name: newIngredient.name!,
+                quantity: newIngredient.quantity!,
+                unit: newIngredient.unit!,
+                allergen: newIngredient.allergen
+            }]);
             setNewIngredient({ name: "", quantity: 0, unit: "g", allergen: undefined });
         }
     };
@@ -229,14 +275,21 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                 </Select>
                             </div>
                             <div className="col-span-2">
-                                <Select value={newIngredient.allergen || "none"} onValueChange={(v) => setNewIngredient({ ...newIngredient, allergen: v === "none" ? undefined : v })}>
+                                <Select 
+                                    value={newIngredient.allergen || "none"} 
+                                    onValueChange={(v) => {
+                                        // When manually selecting, we just store the name for now as the dish structure uses names
+                                        // ideally we would store IDs everywhere but that requires a bigger refactor of the Patient/Dish types
+                                        setNewIngredient({ ...newIngredient, allergen: v === "none" ? undefined : v })
+                                    }}
+                                >
                                     <SelectTrigger className={cn("h-9 text-xs font-bold border-border rounded-none", newIngredient.allergen ? "bg-red-50 border-red-200 text-red-700" : "bg-background")}>
                                         <SelectValue placeholder="Allergène" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60">
                                         <SelectItem value="none" className="text-xs opacity-50">Aucun</SelectItem>
-                                        {ALLERGENS_LIST.map(allergen => (
-                                            <SelectItem key={allergen} value={allergen} className="text-xs">{allergen}</SelectItem>
+                                        {allergensList.map(allergen => (
+                                            <SelectItem key={allergen.id} value={allergen.name} className="text-xs">{allergen.name}</SelectItem>
                                         ))}
                                     </SelectContent>
                                 </Select>

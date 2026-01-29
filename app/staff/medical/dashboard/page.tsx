@@ -58,6 +58,8 @@ import {
     DIETS_LIST
 } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect } from "react";
 
 export default function MedicalDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -75,6 +77,31 @@ export default function MedicalDashboard() {
         allergies: [] as string[],
         dietaryRestrictions: [] as string[]
     });
+    const [doctorName, setDoctorName] = useState<string | null>(null);
+
+    // Fetch authorized user profile
+    useEffect(() => {
+        const fetchProfile = async () => {
+             const supabase = createClient();
+             const { data: { user } } = await supabase.auth.getUser();
+             
+             if (user) {
+                 const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+                 
+                 if (profile && profile.full_name) {
+                     setDoctorName(profile.full_name);
+                 } else {
+                     // Fallback si pas de profil (ex: email direct)
+                     setDoctorName(user.email?.split('@')[0].toUpperCase() || "MÉDECIN");
+                 }
+             }
+        };
+        fetchProfile();
+    }, []);
 
     const filteredPatients = patients.filter(p => {
         const matchesSearch = `${p.firstName} ${p.lastName} ${p.id}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -160,11 +187,11 @@ export default function MedicalDashboard() {
 
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
-                            <p className="text-xs font-black">Dr. Martin</p>
+                            <p className="text-xs font-black">{doctorName || "Médecin"}</p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase">Cardiologie</p>
                         </div>
                         <div className="h-8 w-8 border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
-                            DM
+                            {doctorName ? (doctorName.split(' ').length > 1 ? `${doctorName.split(' ')[0][0]}${doctorName.split(' ')[1][0]}` : doctorName.substring(0,2).toUpperCase()) : "DM"}
                         </div>
                     </div>
                 </div>

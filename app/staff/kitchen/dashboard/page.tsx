@@ -59,6 +59,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish, ALLERGENS_LIST } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -75,6 +76,29 @@ export default function KitchenDashboard() {
         "Lundi-Déjeuner": [], // Will be populated from DB later
         "Lundi-Dîner": [],
     });
+    const [chefName, setChefName] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+             const supabase = createClient();
+             const { data: { user } } = await supabase.auth.getUser();
+             
+             if (user) {
+                 const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+                 
+                 if (profile && profile.full_name) {
+                     setChefName(profile.full_name);
+                 } else {
+                     setChefName("CHEF DE CUISINE");
+                 }
+             }
+        };
+        fetchProfile();
+    }, []);
 
     useEffect(() => {
         const fetchDishes = async () => {
@@ -178,11 +202,11 @@ export default function KitchenDashboard() {
 
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden sm:block">
-                            <p className="text-xs font-black">Chef Bernard</p>
+                            <p className="text-xs font-black">{chefName || "Chef de Cuisine"}</p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest text-right">Cuisine Centrale</p>
                         </div>
                         <div className="h-8 w-8 border border-orange-600/20 bg-orange-600/10 flex items-center justify-center text-orange-600 font-black text-xs uppercase">
-                            CB
+                            {chefName ? chefName.substring(0,2).toUpperCase() : "CC"}
                         </div>
                     </div>
                 </div>

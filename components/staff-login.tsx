@@ -34,27 +34,41 @@ export default function StaffLogin() {
         try {
             const supabase = createClient();
             
-            // Tentative de connexion réelle à Supabase
-            const { data, error: authError } = await supabase.auth.signInWithPassword({
+            // 1. Authentification
+            const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
 
-            if (authError) {
-                throw authError; // Lève l'erreur pour la catcher en bas
-            }
+            if (authError) throw authError;
 
-            // Si connexion réussie, redirection basée sur l'email
-            // (En attendant d'avoir les rôles dans la BDD)
-            if (email.toLowerCase().includes("cuisine")) {
-                router.push("/staff/kitchen/dashboard");
-            } else {
-                router.push("/staff/medical/dashboard");
-            }
+            // 2. Récupération du Rôle via la table 'profiles'
+            if (authData.user) {
+                const { data: profile, error: profileError } = await supabase
+                    .from('profiles')
+                    .select('role')
+                    .eq('id', authData.user.id)
+                    .single();
 
+                if (profileError && profileError.code !== 'PGRST116') {
+                    console.error("Profile Fetch Error:", profileError);
+                    // Fallback si pas de profil (ex: vieux compte): on assume MEDICAL par défaut ou on check l'email en dernier recours
+                    const isKitchenEmail = email.toLowerCase().includes("cuisine");
+                    router.push(isKitchenEmail ? "/staff/kitchen/dashboard" : "/staff/medical/dashboard");
+                } else if (profile) {
+                    // Redirection basée sur le rôle BDD certifié
+                    if (profile.role === 'KITCHEN') {
+                        router.push("/staff/kitchen/dashboard");
+                    } else {
+                        router.push("/staff/medical/dashboard");
+                    }
+                } else {
+                    // Cas rare: Login OK mais pas de profil du tout => Création à la volée ou redirection par défaut
+                    router.push("/staff/medical/dashboard");
+                }
+            }
         } catch (err: any) {
             console.error("Login Check Failed:", err);
-            // Message d'erreur convivial
             if (err.message === "Invalid login credentials") {
                 setError("Email ou mot de passe incorrect.");
             } else {

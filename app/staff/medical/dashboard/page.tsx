@@ -114,23 +114,23 @@ export default function MedicalDashboard() {
     // Fetch authorized user profile
     useEffect(() => {
         const fetchProfile = async () => {
-             const supabase = createClient();
-             const { data: { user } } = await supabase.auth.getUser();
-             
-             if (user) {
-                 const { data: profile } = await supabase
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
+
+            if (user) {
+                const { data: profile } = await supabase
                     .from('profiles')
                     .select('full_name')
                     .eq('id', user.id)
                     .single();
-                 
-                 if (profile && profile.full_name) {
-                     setDoctorName(profile.full_name);
-                 } else {
-                     // Fallback si pas de profil (ex: email direct)
-                     setDoctorName(user.email?.split('@')[0].toUpperCase() || "MÉDECIN");
-                 }
-             }
+
+                if (profile && profile.full_name) {
+                    setDoctorName(profile.full_name);
+                } else {
+                    // Fallback si pas de profil (ex: email direct)
+                    setDoctorName(user.email?.split('@')[0].toUpperCase() || "MÉDECIN");
+                }
+            }
         };
         fetchProfile();
     }, []);
@@ -221,7 +221,7 @@ export default function MedicalDashboard() {
             };
             setPatients([mapped, ...patients]);
         }
-        
+
         setNewPatient({ firstName: "", lastName: "", room: "", service: "Cardiologie", allergies: [], dietaryRestrictions: [] });
         setIsAddPatientOpen(false);
     };
@@ -292,7 +292,7 @@ export default function MedicalDashboard() {
                         </div>
                     </div>
 
-                    <nav className="hidden lg:flex items-center gap-1 border border-border p-1 bg-muted/20" aria-label="Services">
+                    <nav className="hidden lg:flex items-center gap-1 border border-border rounded-full p-1 bg-muted/20" aria-label="Services">
                         <Button
                             variant={selectedService === null ? "default" : "ghost"}
                             size="sm"
@@ -315,12 +315,36 @@ export default function MedicalDashboard() {
                     </nav>
 
                     <div className="flex items-center gap-3">
-                        <div className="text-right hidden sm:block">
+                        <div
+                            onClick={() => window.location.href = '/staff/medical/profile'}
+                            className="text-right hidden sm:block cursor-pointer hover:opacity-80 transition-opacity"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Voir mon profil"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    window.location.href = '/staff/medical/profile';
+                                }
+                            }}
+                        >
                             <p className="text-xs font-black">{doctorName || "Médecin"}</p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase">Cardiologie</p>
                         </div>
-                        <div className="h-8 w-8 border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
-                            {doctorName ? (doctorName.split(' ').length > 1 ? `${doctorName.split(' ')[0][0]}${doctorName.split(' ')[1][0]}` : doctorName.substring(0,2).toUpperCase()) : "DM"}
+                        <div
+                            onClick={() => window.location.href = '/staff/medical/profile'}
+                            className="h-8 w-8 border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-black text-xs cursor-pointer hover:bg-primary/20 transition-colors"
+                            role="button"
+                            tabIndex={0}
+                            aria-label="Voir mon profil"
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    window.location.href = '/staff/medical/profile';
+                                }
+                            }}
+                        >
+                            {doctorName ? (doctorName.split(' ').length > 1 ? `${doctorName.split(' ')[0][0]}${doctorName.split(' ')[1][0]}` : doctorName.substring(0, 2).toUpperCase()) : "DM"}
                         </div>
                     </div>
                 </div>

@@ -47,9 +47,9 @@ export default function PatientLoginPage() {
 
       // 1. Recherche par UUID exact
       let { data: patient, error: fetchError } = await supabase
-        .from("patients")
-        .select("id, last_name, first_name")
-        .eq("id", id.trim())
+        .from('patients')
+        .select('id, last_name, first_name')
+        .eq('id', id.trim())
         .single();
 
       // 2. Si pas trouvé par ID, recherche par Nom de Famille (insensible à la casse)

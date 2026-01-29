@@ -61,10 +61,6 @@ import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish, ALLERGENS_LIST } from "@/lib
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
-import { createClient } from "@/lib/supabase/client";
-
-// ... existing imports
-
 export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
     const [dishes, setDishes] = useState<Dish[]>([]);

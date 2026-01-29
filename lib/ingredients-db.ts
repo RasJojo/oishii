@@ -142,16 +142,15 @@ export const INGREDIENTS_DB: IngredientRef[] = [
     { name: "Huile de sésame", allergen: "Sésame", defaultUnit: "ml" },
     { name: "Huile d'olive", defaultUnit: "ml" },
     { name: "Huile de colza", defaultUnit: "ml" },
-    { name: "Huile de tournesol", defaultUnit: "ml" },
-    { name: "Vinaigre", defaultUnit: "ml" },
-    { name: "Sel", defaultUnit: "g" },
-    { name: "Poivre", defaultUnit: "g" },
-    { name: "Sucre", defaultUnit: "g" },
-    { name: "Miel", defaultUnit: "g" },
-    { name: "Chocolat noir", defaultUnit: "g" },
-    { name: "Chocolat au lait", allergen: "Lactose", defaultUnit: "g" },
-    { name: "Cacao en poudre", defaultUnit: "g" },
-    { name: "Levure chimique", defaultUnit: "sachet" },
-    { name: "Bouillon de légumes", defaultUnit: "ml" }, // Vérifier composition, souvent céleri
-    { name: "Bouillon de volaille", defaultUnit: "ml" },
+    // --- SULFITES (Nouveau) ---
+    { name: "Vin rouge", allergen: "Sulfites", defaultUnit: "ml" },
+    { name: "Vin blanc", allergen: "Sulfites", defaultUnit: "ml" },
+    { name: "Vinaigre balsamique", allergen: "Sulfites", defaultUnit: "ml" },
+    { name: "Raisins secs", allergen: "Sulfites", defaultUnit: "g" },
+    { name: "Abricots secs", allergen: "Sulfites", defaultUnit: "g" },
+    { name: "Pruneaux", allergen: "Sulfites", defaultUnit: "g" },
+
+    // --- LUPIN (Nouveau) ---
+    { name: "Farine de lupin", allergen: "Lupin", defaultUnit: "g" },
+    { name: "Graines de lupin", allergen: "Lupin", defaultUnit: "g" },
 ];

@@ -24,14 +24,25 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export default function PatientDashboard() {
-    // Demo: Jean Dupont (MOCK_PATIENTS[0])
-    const patient = MOCK_PATIENTS[0];
+    const [patient, setPatient] = useState<Patient | null>(null);
     const [selectedMeal, setSelectedMeal] = useState("Déjeuner");
     const [selections, setSelections] = useState<Record<string, Dish | null>>({
         "ENTREE": null,
         "PLAT": null,
         "DESSERT": null
     });
+
+    useEffect(() => {
+        const storedId = localStorage.getItem("currentPatientId");
+        if (storedId) {
+            const foundPatient = MOCK_PATIENTS.find(p => p.id === storedId);
+            setPatient(foundPatient || MOCK_PATIENTS[0]);
+        } else {
+            setPatient(MOCK_PATIENTS[0]);
+        }
+    }, []);
+
+    if (!patient) return <div className="min-h-screen flex items-center justify-center bg-background"><p>Chargement...</p></div>;
 
     const categories = ["ENTREE", "PLAT", "DESSERT"];
 

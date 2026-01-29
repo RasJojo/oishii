@@ -73,7 +73,12 @@ export default function MedicalDashboard() {
     useEffect(() => {
         const fetchPatients = async () => {
             const supabase = createClient();
-            const { data, error } = await supabase.from('patients').select('*');
+            const { data, error } = await supabase
+              .from('patients')
+              .select(`
+                *,
+                patients_allergens ( allergens ( id, name ) )
+              `);
             
             if (data) {
                 // Mapping Snake_case (BDD) -> CamelCase (Front)
@@ -83,7 +88,7 @@ export default function MedicalDashboard() {
                     lastName: p.last_name,
                     room: p.room,
                     service: p.service,
-                    allergies: p.allergies || [],
+                    allergies: p.patients_allergens?.map((pa: any) => pa.allergens?.name).filter(Boolean) || [],
                     dietaryRestrictions: p.dietary_restrictions || [],
                     status: p.status,
                     lastMealSelected: p.last_meal_selected
@@ -141,36 +146,40 @@ export default function MedicalDashboard() {
     const handleUpdatePatient = async (patientId: string, updates: any) => {
         const supabase = createClient();
         
-        // Prepare DB object (snake_case)
+        // Prepare DB object (snake_case) - allergies handled separately via patients_allergens
         const dbUpdates: any = {};
         if (updates.firstName) dbUpdates.first_name = updates.firstName;
         if (updates.lastName) dbUpdates.last_name = updates.lastName;
         if (updates.room) dbUpdates.room = updates.room;
         if (updates.service) dbUpdates.service = updates.service;
         if (updates.status) dbUpdates.status = updates.status;
-        if (updates.allergies) dbUpdates.allergies = updates.allergies;
+        // Note: allergies are now managed via patients_allergens table, not this field
         if (updates.dietaryRestrictions) dbUpdates.dietary_restrictions = updates.dietaryRestrictions;
 
-        const { error } = await supabase.from('patients').update(dbUpdates).eq('id', patientId);
-        
-        if (error) {
-            console.error("Update Error:", error);
-        } else {
-            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+        // Only update patients table if there are non-allergen updates
+        if (Object.keys(dbUpdates).length > 0) {
+            const { error } = await supabase.from('patients').update(dbUpdates).eq('id', patientId);
+            if (error) {
+                console.error("Update Error:", error);
+                return;
+            }
         }
+        
+        // Update local state
+        setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
     };
 
     const handleAddPatient = async (e: React.FormEvent) => {
         e.preventDefault();
         const supabase = createClient();
         
+        // Create patient without allergies field (managed via patients_allergens)
         const dbPatient = {
             first_name: newPatient.firstName,
             last_name: newPatient.lastName,
             room: newPatient.room,
             service: newPatient.service,
             status: "ADMITTED",
-            allergies: newPatient.allergies,
             dietary_restrictions: newPatient.dietaryRestrictions
         };
 
@@ -182,6 +191,23 @@ export default function MedicalDashboard() {
             return;
         }
 
+        if (data && newPatient.allergies.length > 0) {
+            // Get allergen IDs from allergen names
+            const { data: allergenData } = await supabase
+                .from('allergens')
+                .select('id, name')
+                .in('name', newPatient.allergies);
+            
+            if (allergenData && allergenData.length > 0) {
+                // Insert into patients_allergens junction table
+                const allergenLinks = allergenData.map(a => ({
+                    patient_id: data.id,
+                    allergen_id: a.id
+                }));
+                await supabase.from('patients_allergens').insert(allergenLinks);
+            }
+        }
+
         if (data) {
             const mapped: Patient = {
                 id: data.id,
@@ -190,7 +216,7 @@ export default function MedicalDashboard() {
                 room: data.room,
                 service: data.service,
                 status: data.status,
-                allergies: data.allergies || [],
+                allergies: newPatient.allergies, // Use form data since we just inserted them
                 dietaryRestrictions: data.dietary_restrictions || []
             };
             setPatients([mapped, ...patients]);
@@ -200,14 +226,45 @@ export default function MedicalDashboard() {
         setIsAddPatientOpen(false);
     };
 
-    const toggleAllergy = (allergy: string) => {
+    const toggleAllergy = async (allergy: string) => {
         if (!editingPatient) return;
-        const newAllergies = editingPatient.allergies.includes(allergy)
+        
+        const supabase = createClient();
+        const isRemoving = editingPatient.allergies.includes(allergy);
+        
+        // Get allergen ID from name
+        const { data: allergenData } = await supabase
+            .from('allergens')
+            .select('id')
+            .eq('name', allergy)
+            .single();
+        
+        if (!allergenData) {
+            console.error("Allergen not found:", allergy);
+            return;
+        }
+        
+        if (isRemoving) {
+            // Remove from patients_allergens
+            await supabase
+                .from('patients_allergens')
+                .delete()
+                .eq('patient_id', editingPatient.id)
+                .eq('allergen_id', allergenData.id);
+        } else {
+            // Add to patients_allergens
+            await supabase
+                .from('patients_allergens')
+                .insert({ patient_id: editingPatient.id, allergen_id: allergenData.id });
+        }
+        
+        // Update local state
+        const newAllergies = isRemoving
             ? editingPatient.allergies.filter(a => a !== allergy)
             : [...editingPatient.allergies, allergy];
 
         setEditingPatient({ ...editingPatient, allergies: newAllergies });
-        handleUpdatePatient(editingPatient.id, { allergies: newAllergies });
+        setPatients(prev => prev.map(p => p.id === editingPatient.id ? { ...p, allergies: newAllergies } : p));
     };
 
     const toggleDiet = (diet: string) => {

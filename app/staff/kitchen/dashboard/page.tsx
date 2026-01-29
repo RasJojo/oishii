@@ -101,7 +101,12 @@ export default function KitchenDashboard() {
             setIsLoading(true);
             try {
                 const supabase = createClient();
-                const { data, error } = await supabase.from('dishes').select('*');
+                const { data, error } = await supabase
+                  .from('dishes')
+                  .select(`
+                    id, name, category, nutritional_info, available,
+                    dishes_allergens ( allergens ( id, name ) )
+                  `);
                 
                 if (error) {
                     console.error("Error fetching dishes:", error);
@@ -114,7 +119,7 @@ export default function KitchenDashboard() {
                         id: d.id,
                         name: d.name,
                         category: d.category,
-                        allergens: d.allergens || [],
+                        allergens: d.dishes_allergens?.map((da: any) => da.allergens?.name).filter(Boolean) || [],
                         nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
                     }));
                     if (mappedDishes.length > 0) {
@@ -151,11 +156,10 @@ export default function KitchenDashboard() {
         e.preventDefault();
         const supabase = createClient();
         
-        // Mapping CamelCase -> Snake_case for DB
+        // Mapping CamelCase -> Snake_case for DB (without allergens, managed via dishes_allergens)
         const dishData = {
             name: newDish.name,
             category: newDish.category,
-            allergens: newDish.allergens,
             nutritional_info: newDish.nutritionalInfo,
             available: true
         };
@@ -172,12 +176,28 @@ export default function KitchenDashboard() {
             return;
         }
 
+        // Insert allergens into dishes_allergens junction table
+        if (data && newDish.allergens && newDish.allergens.length > 0) {
+            const { data: allergenData } = await supabase
+                .from('allergens')
+                .select('id, name')
+                .in('name', newDish.allergens);
+            
+            if (allergenData && allergenData.length > 0) {
+                const allergenLinks = allergenData.map(a => ({
+                    dish_id: data.id,
+                    allergen_id: a.id
+                }));
+                await supabase.from('dishes_allergens').insert(allergenLinks);
+            }
+        }
+
         if (data) {
             const mappedDish: Dish = {
                 id: data.id,
                 name: data.name,
                 category: data.category,
-                allergens: data.allergens || [],
+                allergens: newDish.allergens || [], // Use form data since we just inserted them
                 nutritionalInfo: data.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
             };
             setDishes([mappedDish, ...dishes]);

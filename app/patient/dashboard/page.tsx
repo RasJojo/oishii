@@ -2,14 +2,10 @@
 
 import { useState, useEffect } from "react";
 import {
-    Utensils,
-    ArrowLeft,
     CheckCircle2,
     AlertTriangle,
     Info,
     ChevronRight,
-    Search,
-    User,
     LogOut,
     Coffee,
     Sun,
@@ -45,13 +41,18 @@ export default function PatientDashboard() {
              const supabase = createClient();
              
              // 1. Fetch Dishes first (needed for menu)
-             const { data: dishesData } = await supabase.from('dishes').select('*');
+             const { data: dishesData } = await supabase
+               .from('dishes')
+               .select(`
+                 id, name, category, nutritional_info, available,
+                 dishes_allergens ( allergens ( id, name ) )
+               `);
              if (dishesData) {
                  const mappedDishes: Dish[] = dishesData.map((d: any) => ({
                     id: d.id,
                     name: d.name,
                     category: d.category,
-                    allergens: d.allergens || [],
+                    allergens: d.dishes_allergens?.map((da: any) => da.allergens?.name).filter(Boolean) || [],
                     nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
                  }));
                  setMenuDishes(mappedDishes);
@@ -62,7 +63,14 @@ export default function PatientDashboard() {
              let pData = null;
 
              if (storedId) {
-                 const { data } = await supabase.from('patients').select('*').eq('id', storedId).single();
+                 const { data } = await supabase
+                   .from('patients')
+                   .select(`
+                     *,
+                     patients_allergens ( allergens ( id, name ) )
+                   `)
+                   .eq('id', storedId)
+                   .single();
                  pData = data;
              }
              
@@ -79,7 +87,7 @@ export default function PatientDashboard() {
                     lastName: pData.last_name,
                     room: pData.room,
                     service: pData.service,
-                    allergies: pData.allergies || [],
+                    allergies: pData.patients_allergens?.map((pa: any) => pa.allergens?.name).filter(Boolean) || [],
                     dietaryRestrictions: pData.dietary_restrictions || [],
                     status: pData.status,
                     lastMealSelected: pData.last_meal_selected

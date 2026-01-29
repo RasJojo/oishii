@@ -64,9 +64,36 @@ import { useEffect } from "react";
 export default function MedicalDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedService, setSelectedService] = useState<string | null>(null);
-    const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS);
+    const [patients, setPatients] = useState<Patient[]>([]);
     const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
     const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Chargement des données réelles
+    useEffect(() => {
+        const fetchPatients = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase.from('patients').select('*');
+            
+            if (data) {
+                // Mapping Snake_case (BDD) -> CamelCase (Front)
+                const mapped = data.map((p: any) => ({
+                    id: p.id,
+                    firstName: p.first_name,
+                    lastName: p.last_name,
+                    room: p.room,
+                    service: p.service,
+                    allergies: p.allergies || [],
+                    dietaryRestrictions: p.dietary_restrictions || [],
+                    status: p.status,
+                    lastMealSelected: p.last_meal_selected
+                }));
+                setPatients(mapped);
+            }
+            setIsLoading(false);
+        };
+        fetchPatients();
+    }, []);
 
     // New patient form state
     const [newPatient, setNewPatient] = useState({

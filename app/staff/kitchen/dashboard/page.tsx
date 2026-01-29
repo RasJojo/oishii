@@ -110,7 +110,7 @@ export default function KitchenDashboard() {
                 if (error) {
                     console.error("Error fetching dishes:", error);
                     // Fallback to mock if DB fails (e.g. table missing)
-                    setDishes(MOCK_DISHES); 
+                    // setDishes([]); 
                 } else if (data) {
                     // Map DB snake_case to TS camelCase if needed, or adjust types.
                     // The DB schema uses snake_case keys (nutritional_info) but code uses camelCase.
@@ -121,11 +121,13 @@ export default function KitchenDashboard() {
                         allergens: d.allergens || [],
                         nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
                     }));
-                    setDishes(mappedDishes.length > 0 ? mappedDishes : MOCK_DISHES);
+                    if (mappedDishes.length > 0) {
+                        setDishes(mappedDishes);
+                    }
                 }
             } catch (e) {
                 console.error("Supabase client error", e);
-                setDishes(MOCK_DISHES);
+                // setDishes([]); // Keep empty on error
             } finally {
                 setIsLoading(false);
             }

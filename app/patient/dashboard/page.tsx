@@ -23,8 +23,11 @@ import { MOCK_PATIENTS, MOCK_DISHES, Dish, Patient } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+import { createClient } from "@/lib/supabase/client";
+
 export default function PatientDashboard() {
     const [patient, setPatient] = useState<Patient | null>(null);
+    const [menuDishes, setMenuDishes] = useState<Dish[]>([]); 
     const [selectedMeal, setSelectedMeal] = useState("Déjeuner");
     const [selections, setSelections] = useState<Record<string, Dish | null>>({
         "ENTREE": null,
@@ -33,13 +36,52 @@ export default function PatientDashboard() {
     });
 
     useEffect(() => {
-        const storedId = localStorage.getItem("currentPatientId");
-        if (storedId) {
-            const foundPatient = MOCK_PATIENTS.find(p => p.id === storedId);
-            setPatient(foundPatient || MOCK_PATIENTS[0]);
-        } else {
-            setPatient(MOCK_PATIENTS[0]);
-        }
+        const loadData = async () => {
+             const supabase = createClient();
+             
+             // 1. Fetch Dishes first (needed for menu)
+             const { data: dishesData } = await supabase.from('dishes').select('*');
+             if (dishesData) {
+                 const mappedDishes: Dish[] = dishesData.map((d: any) => ({
+                    id: d.id,
+                    name: d.name,
+                    category: d.category,
+                    allergens: d.allergens || [],
+                    nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                 }));
+                 setMenuDishes(mappedDishes);
+             }
+
+             // 2. Fetch Patient
+             const storedId = localStorage.getItem("currentPatientId");
+             let pData = null;
+
+             if (storedId) {
+                 const { data } = await supabase.from('patients').select('*').eq('id', storedId).single();
+                 pData = data;
+             }
+             
+             // Fallback: Get first patient if no ID stored or found
+             if (!pData) {
+                  const { data } = await supabase.from('patients').select('*').limit(1).single();
+                  pData = data;
+             }
+
+             if (pData) {
+                 setPatient({
+                    id: pData.id,
+                    firstName: pData.first_name,
+                    lastName: pData.last_name,
+                    room: pData.room,
+                    service: pData.service,
+                    allergies: pData.allergies || [],
+                    dietaryRestrictions: pData.dietary_restrictions || [],
+                    status: pData.status,
+                    lastMealSelected: pData.last_meal_selected
+                 });
+             }
+        };
+        loadData();
     }, []);
 
     if (!patient) return <div className="min-h-screen flex items-center justify-center bg-background"><p>Chargement...</p></div>;
@@ -47,9 +89,8 @@ export default function PatientDashboard() {
     const categories = ["ENTREE", "PLAT", "DESSERT"];
 
     // Filter dishes based on availability in the current menu and patient's allergies
-    // For demo, we assume the menu is the same as the full list but filtered by category
     const getFilteredDishes = (category: string) => {
-        return MOCK_DISHES.filter(dish => {
+        return menuDishes.filter(dish => {
             if (dish.category !== category) return false;
 
             // Filter out dishes with patient's allergens

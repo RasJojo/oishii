@@ -60,16 +60,55 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish, ALLERGENS_LIST } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
+import { createClient } from "@/lib/supabase/client";
+
+// ... existing imports
+
 export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
-    const [dishes, setDishes] = useState<Dish[]>(MOCK_DISHES);
+    const [dishes, setDishes] = useState<Dish[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isAddDishOpen, setIsAddDishOpen] = useState(false);
 
     // State for the weekly planning
     const [planning, setPlanning] = useState<Record<string, Dish[]>>({
-        "Lundi-Déjeuner": [MOCK_DISHES[0], MOCK_DISHES[1], MOCK_DISHES[3]],
-        "Lundi-Dîner": [MOCK_DISHES[0], MOCK_DISHES[2], MOCK_DISHES[3]],
+        "Lundi-Déjeuner": [], // Will be populated from DB later
+        "Lundi-Dîner": [],
     });
+
+    useEffect(() => {
+        const fetchDishes = async () => {
+            setIsLoading(true);
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase.from('dishes').select('*');
+                
+                if (error) {
+                    console.error("Error fetching dishes:", error);
+                    // Fallback to mock if DB fails (e.g. table missing)
+                    setDishes(MOCK_DISHES); 
+                } else if (data) {
+                    // Map DB snake_case to TS camelCase if needed, or adjust types.
+                    // The DB schema uses snake_case keys (nutritional_info) but code uses camelCase.
+                    const mappedDishes: Dish[] = data.map((d: any) => ({
+                        id: d.id,
+                        name: d.name,
+                        category: d.category,
+                        allergens: d.allergens || [],
+                        nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                    }));
+                    setDishes(mappedDishes.length > 0 ? mappedDishes : MOCK_DISHES);
+                }
+            } catch (e) {
+                console.error("Supabase client error", e);
+                setDishes(MOCK_DISHES);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDishes();
+    }, []);
 
     const [isAssignOpen, setIsAssignOpen] = useState(false);
     const [assignTarget, setAssignTarget] = useState<{ day: string, meal: string } | null>(null);

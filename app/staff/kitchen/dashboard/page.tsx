@@ -240,7 +240,7 @@ export default function KitchenDashboard() {
                                         <Plus size={16} /> Nouveau Plat
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-md bg-card border-2 border-border p-8 rounded-none">
+                                <DialogContent className="max-w-2xl bg-card border-2 border-border p-8 rounded-none max-h-[90vh] overflow-y-auto">
                                     <DialogHeader className="mb-6">
                                         <DialogTitle className="text-xl font-black uppercase tracking-tight">Création Recette</DialogTitle>
                                         <DialogDescription className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Enregistrez un nouveau plat dans la base.</DialogDescription>
@@ -250,6 +250,7 @@ export default function KitchenDashboard() {
                                             <Label htmlFor="dishName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nom du Plat</Label>
                                             <Input id="dishName" value={newDish.name} onChange={(e) => setNewDish({ ...newDish, name: e.target.value })} required className="h-10 font-bold bg-muted/20 border-border rounded-none focus-visible:ring-1 focus-visible:ring-orange-500" />
                                         </div>
+                                        
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Catégorie</Label>
@@ -264,12 +265,105 @@ export default function KitchenDashboard() {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Kcal</Label>
-                                                <Input type="number" value={newDish.nutritionalInfo?.calories} onChange={(e) => setNewDish({ ...newDish, nutritionalInfo: { ...newDish.nutritionalInfo!, calories: parseInt(e.target.value) } })} className="h-10 font-bold bg-muted/20 border-border rounded-none focus-visible:ring-1 focus-visible:ring-orange-500" />
+                                        </div>
+
+                                        {/* Allergens Multi-Select */}
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Allergènes</Label>
+                                            <div className="grid grid-cols-2 gap-2 p-4 bg-muted/20 border border-border rounded-none">
+                                                {ALLERGENS_LIST.map((allergen) => (
+                                                    <label key={allergen} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={newDish.allergens?.includes(allergen)}
+                                                            onChange={(e) => {
+                                                                const current = newDish.allergens || [];
+                                                                if (e.target.checked) {
+                                                                    setNewDish({ ...newDish, allergens: [...current, allergen] });
+                                                                } else {
+                                                                    setNewDish({ ...newDish, allergens: current.filter(a => a !== allergen) });
+                                                                }
+                                                            }}
+                                                            className="w-4 h-4 accent-orange-500"
+                                                        />
+                                                        <span className="text-xs font-bold">{allergen}</span>
+                                                    </label>
+                                                ))}
                                             </div>
                                         </div>
-                                        <Button type="submit" className="w-full h-12 bg-orange-500 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-none">Ajouter au Répertoire</Button>
+
+                                        {/* Nutritional Info */}
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Informations Nutritionnelles</Label>
+                                            <div className="grid grid-cols-4 gap-3">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="calories" className="text-[9px] font-bold uppercase text-muted-foreground">Calories</Label>
+                                                    <Input 
+                                                        id="calories"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.calories || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                calories: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="protein" className="text-[9px] font-bold uppercase text-muted-foreground">Protéines (g)</Label>
+                                                    <Input 
+                                                        id="protein"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.protein || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                protein: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="carbs" className="text-[9px] font-bold uppercase text-muted-foreground">Glucides (g)</Label>
+                                                    <Input 
+                                                        id="carbs"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.carbs || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                carbs: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="fat" className="text-[9px] font-bold uppercase text-muted-foreground">Lipides (g)</Label>
+                                                    <Input 
+                                                        id="fat"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.fat || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                fat: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Button type="submit" className="w-full h-12 bg-orange-500 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-none hover:bg-orange-600">Ajouter au Répertoire</Button>
                                     </form>
                                 </DialogContent>
                             </Dialog>

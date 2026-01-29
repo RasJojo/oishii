@@ -9,26 +9,44 @@ import {
   Terminal,
   ShieldCheck,
   Loader2,
-  Hospital
+  Hospital,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 
 export default function PatientLoginPage() {
   const router = useRouter();
   const [id, setId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
+  /**
+   * @description This function is called when the user submits his patient-ID
+   * This function redirects the user with the right parameters
+   * to the login route that will handle how it connects
+   * 
+   * Here it will send the patient-id to the page
+   */
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     // Simulation d'identification par bracelet
     setTimeout(() => {
-      router.push("/patient/dashboard");
+      router.push("/patient/dashboard"); // TODO remove this for the new login method
+      router.push(`/patient/login?patient-id=${id}`)
     }, 1000);
   };
+
+  const handleScanQR = () => {
+
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4 font-sans">
@@ -37,7 +55,9 @@ export default function PatientLoginPage() {
         <div className="text-center space-y-4">
           <div className="inline-flex items-center gap-2 px-6 py-2 border-4 border-primary bg-primary text-primary-foreground mb-4">
             <Hospital size={24} />
-            <span className="font-black tracking-[0.3em] text-sm uppercase">Portail Patient</span>
+            <span className="font-black tracking-[0.3em] text-sm uppercase">
+              Portail Patient
+            </span>
           </div>
           <h1 className="text-4xl font-black uppercase tracking-tight leading-none text-foreground">
             Bienvenue chez <br />
@@ -48,23 +68,35 @@ export default function PatientLoginPage() {
           </p>
         </div>
 
-        <Card className="border-[6px] border-border bg-card shadow-2xl rounded-none">
+        <Card className="border-[6px] border-border bg-card shadow-2xl rounded-none py-0">
           <CardHeader className="p-8 border-b-4 border-border bg-muted/20">
-            <div className="flex items-center gap-4">
-              <ScanLine size={32} className="text-primary animate-pulse" />
-              <div>
-                <CardTitle className="text-2xl font-black uppercase tracking-tight">Identification</CardTitle>
-                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">Approchez votre bracelet du lecteur</p>
+            <h2 className="flex flex-col items-center justify-center gap-4">
+              <div className="flex items-center gap-2">
+                <ScanLine size={32} className="text-primary animate-pulse" />
+                <CardTitle className="text-2xl font-black uppercase tracking-tight">
+                  Identification
+                </CardTitle>
               </div>
-            </div>
+              <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">
+                Scannez le QR Code sur le lit ou le bracelet
+              </p>
+            </h2>
           </CardHeader>
 
           <CardContent className="p-10">
             <form onSubmit={handleLogin} className="space-y-8">
               <div className="space-y-4">
-                <Label htmlFor="patient-id" className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1">Numéro ID ou Scan Manuel</Label>
+                <Label
+                  htmlFor="patient-id"
+                  className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1"
+                >
+                  Numéro ID ou Scan Manuel
+                </Label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={24} />
+                  <User
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground"
+                    size={24}
+                  />
                   <Input
                     id="patient-id"
                     placeholder="EX: PAT-452"
@@ -78,7 +110,7 @@ export default function PatientLoginPage() {
 
               <Button
                 type="submit"
-                className="w-full h-20 bg-primary text-primary-foreground font-black uppercase tracking-[0.3em] text-lg rounded-none shadow-xl hover:bg-primary/95 active:translate-y-1 transition-all focus-visible:ring-8 focus-visible:ring-primary/20"
+                className="w-full h-20 bg-primary text-primary-foreground font-black uppercase tracking-[0.2em] text-md rounded-none shadow-xl hover:bg-primary/95 active:translate-y-1 transition-all focus-visible:ring-8 focus-visible:ring-primary/20"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -103,8 +135,13 @@ export default function PatientLoginPage() {
 
         {/* Extra big button for users who can't see the card well */}
         <div className="text-center pt-8">
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-50">Difficulté à voir ?</p>
-          <Button variant="outline" className="h-12 border-2 border-border font-black uppercase text-[10px] rounded-none px-8">
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-4 opacity-50">
+            Difficulté à voir ?
+          </p>
+          <Button
+            variant="outline"
+            className="h-12 border-2 border-border font-black uppercase text-[10px] rounded-none px-8"
+          >
             Activer la synthèse vocale
           </Button>
         </div>

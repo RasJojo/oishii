@@ -61,10 +61,10 @@ export default function PatientDashboard() {
                  pData = data;
              }
              
-             // Fallback: Get first patient if no ID stored or found
+             // Si pas de patient trouvé, redirection vers login (Security)
              if (!pData) {
-                  const { data } = await supabase.from('patients').select('*').limit(1).single();
-                  pData = data;
+                 window.location.href = "/patient"; // Hard redirect to ensure clean state
+                 return;
              }
 
              if (pData) {

@@ -112,7 +112,7 @@ export default function PatientDashboard() {
                 {/* Meal Selection Tabs - Large touch/click areas */}
                 <div className="space-y-4">
                     <h2 className="text-lg font-black uppercase tracking-widest border-b-2 border-border pb-2">Choisissez votre Menu</h2>
-                    <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Type de repas">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Type de repas">
                         {[
                             { name: "Petit Déjeuner", icon: Coffee },
                             { name: "Déjeuner", icon: Sun },

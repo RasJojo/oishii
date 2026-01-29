@@ -153,7 +153,7 @@ export default function StaffLogin() {
                     <CardFooter className="p-8 pt-0 flex flex-col gap-4">
                         <div className="w-full border-t-2 border-border pt-6 flex flex-col gap-3">
                             <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground text-center">Pré-remplissage Démo (Nécessite compte actif)</p>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <Button
                                     variant="outline"
                                     className="h-10 text-[9px] font-black uppercase border-2 border-border rounded-none hover:bg-muted"

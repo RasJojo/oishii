@@ -440,8 +440,12 @@ export default function KitchenDashboard() {
                                                                                     {catItems.map(dish => (
                                                                                         <div key={dish.id} className="p-1 px-2 border border-orange-500/20 bg-orange-500/5 text-[9px] font-black uppercase tracking-tight flex justify-between items-center group/item">
                                                                                             <span className="truncate">{dish.name}</span>
-                                                                                            <button onClick={() => handleAssignDish(dish)} className="opacity-0 group-hover/item:opacity-100 hover:text-red-500 transition-opacity">
-                                                                                                <X size={10} />
+                                                                                            <button
+                                                                                                aria-label={`Retirer ${dish.name} du menu`}
+                                                                                                onClick={() => handleAssignDish(dish)}
+                                                                                                className="opacity-0 group-hover/item:opacity-100 focus:opacity-100 hover:text-red-500 transition-opacity"
+                                                                                            >
+                                                                                                <X size={10} aria-hidden="true" />
                                                                                             </button>
                                                                                         </div>
                                                                                     ))}

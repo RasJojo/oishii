@@ -170,7 +170,7 @@ export default function MedicalDashboard() {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main id="main-content" className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
@@ -199,6 +199,7 @@ export default function MedicalDashboard() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <Input
                             placeholder="RECHERCHER UN PATIENT..."
+                            aria-label="Rechercher un patient par nom ou identifiant"
                             className="pl-9 h-11 bg-card border-border focus-visible:ring-2 focus-visible:ring-primary/20 text-xs font-bold uppercase"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -306,10 +307,10 @@ export default function MedicalDashboard() {
                         <Table>
                             <TableHeader className="bg-muted/30 border-b border-border">
                                 <TableRow>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground pl-6">Information Patient</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Localisation</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Restrictions / Allergies</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground text-right pr-8">Actions</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground pl-6">Information Patient</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Localisation</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Restrictions / Allergies</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground text-right pr-8">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -386,23 +387,24 @@ export default function MedicalDashboard() {
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-3">
                                                                 {ALLERGENS_LIST.map(allergy => (
-                                                                    <div
+                                                                    <label
                                                                         key={allergy}
+                                                                        htmlFor={`allergy-${allergy}`}
                                                                         className={cn(
-                                                                            "flex items-center space-x-2 border p-3 cursor-pointer transition-colors",
+                                                                            "flex items-center space-x-2 border p-3 cursor-pointer transition-colors group focus-within:ring-2 focus-within:ring-primary",
                                                                             editingPatient?.allergies.includes(allergy)
                                                                                 ? "border-destructive/40 bg-destructive/5"
                                                                                 : "border-border bg-muted/10 hover:border-destructive/20"
                                                                         )}
-                                                                        onClick={() => toggleAllergy(allergy)}
                                                                     >
                                                                         <Checkbox
                                                                             id={`allergy-${allergy}`}
                                                                             checked={editingPatient?.allergies.includes(allergy)}
+                                                                            onCheckedChange={() => toggleAllergy(allergy)}
                                                                             className="border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
                                                                         />
-                                                                        <Label htmlFor={`allergy-${allergy}`} className="text-[10px] font-black uppercase cursor-pointer flex-1">{allergy}</Label>
-                                                                    </div>
+                                                                        <span className="text-[10px] font-black uppercase cursor-pointer flex-1">{allergy}</span>
+                                                                    </label>
                                                                 ))}
                                                             </div>
                                                         </section>
@@ -416,23 +418,24 @@ export default function MedicalDashboard() {
                                                             </div>
                                                             <div className="space-y-2">
                                                                 {DIETS_LIST.map(diet => (
-                                                                    <div
+                                                                    <label
                                                                         key={diet}
+                                                                        htmlFor={`diet-${diet}`}
                                                                         className={cn(
-                                                                            "flex items-center space-x-3 border p-4 cursor-pointer transition-colors",
+                                                                            "flex items-center space-x-3 border p-4 cursor-pointer transition-colors group focus-within:ring-2 focus-within:ring-primary",
                                                                             editingPatient?.dietaryRestrictions.includes(diet)
                                                                                 ? "border-primary bg-primary/5"
                                                                                 : "border-border bg-muted/10 hover:border-primary/40"
                                                                         )}
-                                                                        onClick={() => toggleDiet(diet)}
                                                                     >
                                                                         <Checkbox
                                                                             id={`diet-${diet}`}
                                                                             checked={editingPatient?.dietaryRestrictions.includes(diet)}
+                                                                            onCheckedChange={() => toggleDiet(diet)}
                                                                             className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                         />
-                                                                        <Label htmlFor={`diet-${diet}`} className="text-[11px] font-black uppercase cursor-pointer flex-1">{diet}</Label>
-                                                                    </div>
+                                                                        <span className="text-[11px] font-black uppercase cursor-pointer flex-1">{diet}</span>
+                                                                    </label>
                                                                 ))}
                                                             </div>
                                                         </section>

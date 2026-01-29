@@ -134,7 +134,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
                                 required
-                                className="h-10 text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-orange-500 rounded-none"
+                                className="h-10 text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-orange-600 rounded-none"
                             />
                         </div>
                         <div className="space-y-2">
@@ -161,7 +161,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                             id="description"
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
-                            className="min-h-[60px] text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-orange-500 rounded-none"
+                            className="min-h-[60px] text-sm font-bold bg-muted/20 border-border focus-visible:ring-1 focus-visible:ring-orange-600 rounded-none"
                             placeholder="Décrivez le plat..."
                         />
                     </div>
@@ -270,7 +270,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                                 return (
                                                     <div
                                                         key={globalIndex}
-                                                        className="flex items-center justify-between p-2 bg-background border border-border text-xs font-bold group hover:border-orange-500"
+                                                        className="flex items-center justify-between p-2 bg-background border border-border text-xs font-bold group hover:border-orange-600"
                                                     >
                                                         <span className="truncate">
                                                             {ingredient.name} - {ingredient.quantity}{ingredient.unit}
@@ -293,7 +293,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
 
                         {/* Allergènes détectés */}
                         {detectedAllergens.length > 0 && (
-                            <div className="mt-4 p-3 bg-orange-500/10 border border-orange-500/30">
+                            <div className="mt-4 p-3 bg-orange-600/10 border border-orange-600/30">
                                 <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground mb-2">
                                     Allergènes détectés automatiquement :
                                 </p>

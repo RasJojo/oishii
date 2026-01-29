@@ -58,21 +58,77 @@ import {
     DIETS_LIST
 } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+import { useEffect } from "react";
 
 export default function MedicalDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
     const [selectedService, setSelectedService] = useState<string | null>(null);
-    const [patients, setPatients] = useState<Patient[]>(MOCK_PATIENTS);
+    const [patients, setPatients] = useState<Patient[]>([]);
     const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
     const [isAddPatientOpen, setIsAddPatientOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Chargement des données réelles
+    useEffect(() => {
+        const fetchPatients = async () => {
+            const supabase = createClient();
+            const { data, error } = await supabase.from('patients').select('*');
+            
+            if (data) {
+                // Mapping Snake_case (BDD) -> CamelCase (Front)
+                const mapped = data.map((p: any) => ({
+                    id: p.id,
+                    firstName: p.first_name,
+                    lastName: p.last_name,
+                    room: p.room,
+                    service: p.service,
+                    allergies: p.allergies || [],
+                    dietaryRestrictions: p.dietary_restrictions || [],
+                    status: p.status,
+                    lastMealSelected: p.last_meal_selected
+                }));
+                setPatients(mapped);
+            }
+            setIsLoading(false);
+        };
+        fetchPatients();
+    }, []);
 
     // New patient form state
     const [newPatient, setNewPatient] = useState({
         firstName: "",
         lastName: "",
         room: "",
-        service: "Cardiologie"
+        service: "Cardiologie",
+        allergies: [] as string[],
+        dietaryRestrictions: [] as string[]
     });
+    const [doctorName, setDoctorName] = useState<string | null>(null);
+
+    // Fetch authorized user profile
+    useEffect(() => {
+        const fetchProfile = async () => {
+             const supabase = createClient();
+             const { data: { user } } = await supabase.auth.getUser();
+             
+             if (user) {
+                 const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+                 
+                 if (profile && profile.full_name) {
+                     setDoctorName(profile.full_name);
+                 } else {
+                     // Fallback si pas de profil (ex: email direct)
+                     setDoctorName(user.email?.split('@')[0].toUpperCase() || "MÉDECIN");
+                 }
+             }
+        };
+        fetchProfile();
+    }, []);
 
     const filteredPatients = patients.filter(p => {
         const matchesSearch = `${p.firstName} ${p.lastName} ${p.id}`.toLowerCase().includes(searchTerm.toLowerCase());
@@ -82,22 +138,65 @@ export default function MedicalDashboard() {
 
     const services = Array.from(new Set(MOCK_PATIENTS.map(p => p.service)));
 
-    const handleUpdatePatient = (patientId: string, updates: Partial<Patient>) => {
-        setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+    const handleUpdatePatient = async (patientId: string, updates: any) => {
+        const supabase = createClient();
+        
+        // Prepare DB object (snake_case)
+        const dbUpdates: any = {};
+        if (updates.firstName) dbUpdates.first_name = updates.firstName;
+        if (updates.lastName) dbUpdates.last_name = updates.lastName;
+        if (updates.room) dbUpdates.room = updates.room;
+        if (updates.service) dbUpdates.service = updates.service;
+        if (updates.status) dbUpdates.status = updates.status;
+        if (updates.allergies) dbUpdates.allergies = updates.allergies;
+        if (updates.dietaryRestrictions) dbUpdates.dietary_restrictions = updates.dietaryRestrictions;
+
+        const { error } = await supabase.from('patients').update(dbUpdates).eq('id', patientId);
+        
+        if (error) {
+            console.error("Update Error:", error);
+        } else {
+            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+        }
     };
 
-    const handleAddPatient = (e: React.FormEvent) => {
+    const handleAddPatient = async (e: React.FormEvent) => {
         e.preventDefault();
-        const id = `PAT-${Math.floor(100 + Math.random() * 900)}`;
-        const patient: Patient = {
-            ...newPatient,
-            id,
-            allergies: [],
-            dietaryRestrictions: [],
-            status: "ADMITTED"
+        const supabase = createClient();
+        
+        const dbPatient = {
+            first_name: newPatient.firstName,
+            last_name: newPatient.lastName,
+            room: newPatient.room,
+            service: newPatient.service,
+            status: "ADMITTED",
+            allergies: newPatient.allergies,
+            dietary_restrictions: newPatient.dietaryRestrictions
         };
-        setPatients([patient, ...patients]);
-        setNewPatient({ firstName: "", lastName: "", room: "", service: "Cardiologie" });
+
+        const { data, error } = await supabase.from('patients').insert(dbPatient).select().single();
+
+        if (error) {
+            console.error("Add Error:", error);
+            alert("Erreur lors de l'admission du patient.");
+            return;
+        }
+
+        if (data) {
+            const mapped: Patient = {
+                id: data.id,
+                firstName: data.first_name,
+                lastName: data.last_name,
+                room: data.room,
+                service: data.service,
+                status: data.status,
+                allergies: data.allergies || [],
+                dietaryRestrictions: data.dietary_restrictions || []
+            };
+            setPatients([mapped, ...patients]);
+        }
+        
+        setNewPatient({ firstName: "", lastName: "", room: "", service: "Cardiologie", allergies: [], dietaryRestrictions: [] });
         setIsAddPatientOpen(false);
     };
 
@@ -160,17 +259,17 @@ export default function MedicalDashboard() {
 
                     <div className="flex items-center gap-3">
                         <div className="text-right hidden sm:block">
-                            <p className="text-xs font-black">Dr. Martin</p>
+                            <p className="text-xs font-black">{doctorName || "Médecin"}</p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase">Cardiologie</p>
                         </div>
                         <div className="h-8 w-8 border border-primary/20 bg-primary/10 flex items-center justify-center text-primary font-black text-xs">
-                            DM
+                            {doctorName ? (doctorName.split(' ').length > 1 ? `${doctorName.split(' ')[0][0]}${doctorName.split(' ')[1][0]}` : doctorName.substring(0,2).toUpperCase()) : "DM"}
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+            <main id="main-content" className="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
                 {/* Stats */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     {[
@@ -199,6 +298,7 @@ export default function MedicalDashboard() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
                         <Input
                             placeholder="RECHERCHER UN PATIENT..."
+                            aria-label="Rechercher un patient par nom ou identifiant"
                             className="pl-9 h-11 bg-card border-border focus-visible:ring-2 focus-visible:ring-primary/20 text-xs font-bold uppercase"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
@@ -212,7 +312,7 @@ export default function MedicalDashboard() {
                                 Admission Patient
                             </Button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-md bg-card border-2 border-border p-8 rounded-none shadow-2xl">
+                        <DialogContent className="max-w-2xl bg-card border-2 border-border p-8 rounded-none shadow-2xl max-h-[90vh] overflow-y-auto">
                             <DialogHeader className="mb-6">
                                 <DialogTitle className="text-2xl font-black uppercase tracking-tight">Nouvelle Admission</DialogTitle>
                                 <DialogDescription className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Enregistrez les informations du patient.</DialogDescription>
@@ -245,6 +345,55 @@ export default function MedicalDashboard() {
                                         </Select>
                                     </div>
                                 </div>
+
+                                {/* Allergies Multi-Select */}
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Allergies</Label>
+                                    <div className="grid grid-cols-2 gap-2 p-4 bg-muted/20 border border-border rounded-none max-h-48 overflow-y-auto">
+                                        {ALLERGENS_LIST.map((allergen) => (
+                                            <label key={allergen} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newPatient.allergies.includes(allergen)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setNewPatient({ ...newPatient, allergies: [...newPatient.allergies, allergen] });
+                                                        } else {
+                                                            setNewPatient({ ...newPatient, allergies: newPatient.allergies.filter(a => a !== allergen) });
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 accent-primary"
+                                                />
+                                                <span className="text-xs font-bold">{allergen}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Dietary Restrictions Multi-Select */}
+                                <div className="space-y-2">
+                                    <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Régimes Alimentaires</Label>
+                                    <div className="grid grid-cols-2 gap-2 p-4 bg-muted/20 border border-border rounded-none">
+                                        {DIETS_LIST.map((diet) => (
+                                            <label key={diet} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-none">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={newPatient.dietaryRestrictions.includes(diet)}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            setNewPatient({ ...newPatient, dietaryRestrictions: [...newPatient.dietaryRestrictions, diet] });
+                                                        } else {
+                                                            setNewPatient({ ...newPatient, dietaryRestrictions: newPatient.dietaryRestrictions.filter(d => d !== diet) });
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 accent-primary"
+                                                />
+                                                <span className="text-xs font-bold">{diet}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <Button type="submit" className="w-full h-12 font-black uppercase tracking-[0.2em] text-[10px] mt-2">Valider l'Admission</Button>
                             </form>
                         </DialogContent>
@@ -257,10 +406,10 @@ export default function MedicalDashboard() {
                         <Table>
                             <TableHeader className="bg-muted/30 border-b border-border">
                                 <TableRow>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground pl-6">Information Patient</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Localisation</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Restrictions / Allergies</TableHead>
-                                    <TableHead className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground text-right pr-8">Actions</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground pl-6">Information Patient</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Localisation</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground">Restrictions / Allergies</TableHead>
+                                    <TableHead scope="col" className="font-black uppercase text-[10px] py-5 tracking-[0.1em] text-muted-foreground text-right pr-8">Actions</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -337,23 +486,24 @@ export default function MedicalDashboard() {
                                                             </div>
                                                             <div className="grid grid-cols-2 gap-3">
                                                                 {ALLERGENS_LIST.map(allergy => (
-                                                                    <div
+                                                                    <label
                                                                         key={allergy}
+                                                                        htmlFor={`allergy-${allergy}`}
                                                                         className={cn(
-                                                                            "flex items-center space-x-2 border p-3 cursor-pointer transition-colors",
+                                                                            "flex items-center space-x-2 border p-3 cursor-pointer transition-colors group focus-within:ring-2 focus-within:ring-primary",
                                                                             editingPatient?.allergies.includes(allergy)
                                                                                 ? "border-destructive/40 bg-destructive/5"
                                                                                 : "border-border bg-muted/10 hover:border-destructive/20"
                                                                         )}
-                                                                        onClick={() => toggleAllergy(allergy)}
                                                                     >
                                                                         <Checkbox
                                                                             id={`allergy-${allergy}`}
                                                                             checked={editingPatient?.allergies.includes(allergy)}
+                                                                            onCheckedChange={() => toggleAllergy(allergy)}
                                                                             className="border-border data-[state=checked]:bg-destructive data-[state=checked]:border-destructive"
                                                                         />
-                                                                        <Label htmlFor={`allergy-${allergy}`} className="text-[10px] font-black uppercase cursor-pointer flex-1">{allergy}</Label>
-                                                                    </div>
+                                                                        <span className="text-[10px] font-black uppercase cursor-pointer flex-1">{allergy}</span>
+                                                                    </label>
                                                                 ))}
                                                             </div>
                                                         </section>
@@ -367,23 +517,24 @@ export default function MedicalDashboard() {
                                                             </div>
                                                             <div className="space-y-2">
                                                                 {DIETS_LIST.map(diet => (
-                                                                    <div
+                                                                    <label
                                                                         key={diet}
+                                                                        htmlFor={`diet-${diet}`}
                                                                         className={cn(
-                                                                            "flex items-center space-x-3 border p-4 cursor-pointer transition-colors",
+                                                                            "flex items-center space-x-3 border p-4 cursor-pointer transition-colors group focus-within:ring-2 focus-within:ring-primary",
                                                                             editingPatient?.dietaryRestrictions.includes(diet)
                                                                                 ? "border-primary bg-primary/5"
                                                                                 : "border-border bg-muted/10 hover:border-primary/40"
                                                                         )}
-                                                                        onClick={() => toggleDiet(diet)}
                                                                     >
                                                                         <Checkbox
                                                                             id={`diet-${diet}`}
                                                                             checked={editingPatient?.dietaryRestrictions.includes(diet)}
+                                                                            onCheckedChange={() => toggleDiet(diet)}
                                                                             className="border-border data-[state=checked]:bg-primary data-[state=checked]:border-primary"
                                                                         />
-                                                                        <Label htmlFor={`diet-${diet}`} className="text-[11px] font-black uppercase cursor-pointer flex-1">{diet}</Label>
-                                                                    </div>
+                                                                        <span className="text-[11px] font-black uppercase cursor-pointer flex-1">{diet}</span>
+                                                                    </label>
                                                                 ))}
                                                             </div>
                                                         </section>

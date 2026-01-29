@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     UtensilsCrossed,
     ChefHat,
@@ -59,17 +59,82 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish, ALLERGENS_LIST } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
+
+import { createClient } from "@/lib/supabase/client";
+
+// ... existing imports
 
 export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
-    const [dishes, setDishes] = useState<Dish[]>(MOCK_DISHES);
+    const [dishes, setDishes] = useState<Dish[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
     const [isAddDishOpen, setIsAddDishOpen] = useState(false);
 
     // State for the weekly planning
     const [planning, setPlanning] = useState<Record<string, Dish[]>>({
-        "Lundi-Déjeuner": [MOCK_DISHES[0], MOCK_DISHES[1], MOCK_DISHES[3]],
-        "Lundi-Dîner": [MOCK_DISHES[0], MOCK_DISHES[2], MOCK_DISHES[3]],
+        "Lundi-Déjeuner": [], // Will be populated from DB later
+        "Lundi-Dîner": [],
     });
+    const [chefName, setChefName] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchProfile = async () => {
+             const supabase = createClient();
+             const { data: { user } } = await supabase.auth.getUser();
+             
+             if (user) {
+                 const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+                 
+                 if (profile && profile.full_name) {
+                     setChefName(profile.full_name);
+                 } else {
+                     setChefName("CHEF DE CUISINE");
+                 }
+             }
+        };
+        fetchProfile();
+    }, []);
+
+    useEffect(() => {
+        const fetchDishes = async () => {
+            setIsLoading(true);
+            try {
+                const supabase = createClient();
+                const { data, error } = await supabase.from('dishes').select('*');
+                
+                if (error) {
+                    console.error("Error fetching dishes:", error);
+                    // Fallback to mock if DB fails (e.g. table missing)
+                    // setDishes([]); 
+                } else if (data) {
+                    // Map DB snake_case to TS camelCase if needed, or adjust types.
+                    // The DB schema uses snake_case keys (nutritional_info) but code uses camelCase.
+                    const mappedDishes: Dish[] = data.map((d: any) => ({
+                        id: d.id,
+                        name: d.name,
+                        category: d.category,
+                        allergens: d.allergens || [],
+                        nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+                    }));
+                    if (mappedDishes.length > 0) {
+                        setDishes(mappedDishes);
+                    }
+                }
+            } catch (e) {
+                console.error("Supabase client error", e);
+                // setDishes([]); // Keep empty on error
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchDishes();
+    }, []);
 
     const [isAssignOpen, setIsAssignOpen] = useState(false);
     const [assignTarget, setAssignTarget] = useState<{ day: string, meal: string } | null>(null);
@@ -86,14 +151,42 @@ export default function KitchenDashboard() {
     const preparedMeals = MOCK_PATIENTS.filter(p => p.status === "ADMITTED").length;
     const progress = (preparedMeals / totalMeals) * 100;
 
-    const handleAddDish = (e: React.FormEvent) => {
+    const handleAddDish = async (e: React.FormEvent) => {
         e.preventDefault();
-        const id = `DISH-${Math.floor(100 + Math.random() * 900)}`;
-        const dish: Dish = {
-            ...newDish as Dish,
-            id,
+        const supabase = createClient();
+        
+        // Mapping CamelCase -> Snake_case for DB
+        const dishData = {
+            name: newDish.name,
+            category: newDish.category,
+            allergens: newDish.allergens,
+            nutritional_info: newDish.nutritionalInfo,
+            available: true
         };
-        setDishes([dish, ...dishes]);
+
+        const { data, error } = await supabase
+            .from('dishes')
+            .insert(dishData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error adding dish:", error);
+            alert("Erreur lors de la création du plat.");
+            return;
+        }
+
+        if (data) {
+            const mappedDish: Dish = {
+                id: data.id,
+                name: data.name,
+                category: data.category,
+                allergens: data.allergens || [],
+                nutritionalInfo: data.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            };
+            setDishes([mappedDish, ...dishes]);
+        }
+
         setNewDish({
             name: "",
             category: "PLAT",
@@ -128,7 +221,7 @@ export default function KitchenDashboard() {
             <header className="sticky top-0 z-30 w-full border-b bg-card h-16 flex items-center shadow-sm px-6">
                 <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 border border-orange-500/20 bg-orange-500/5 text-orange-600">
+                        <div className="p-2 border border-orange-600/20 bg-orange-600/5 text-orange-600">
                             <ChefHat size={24} />
                         </div>
                         <div>
@@ -139,11 +232,11 @@ export default function KitchenDashboard() {
 
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden sm:block">
-                            <p className="text-xs font-black">Chef Bernard</p>
+                            <p className="text-xs font-black">{chefName || "Chef de Cuisine"}</p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest text-right">Cuisine Centrale</p>
                         </div>
-                        <div className="h-8 w-8 border border-orange-500/20 bg-orange-500/10 flex items-center justify-center text-orange-600 font-black text-xs uppercase">
-                            CB
+                        <div className="h-8 w-8 border border-orange-600/20 bg-orange-600/10 flex items-center justify-center text-orange-600 font-black text-xs uppercase">
+                            {chefName ? chefName.substring(0,2).toUpperCase() : "CC"}
                         </div>
                     </div>
                 </div>
@@ -157,21 +250,21 @@ export default function KitchenDashboard() {
                             <CardTitle className="text-sm font-black uppercase tracking-tight">État de la Production</CardTitle>
                             <p className="text-[9px] font-bold uppercase text-muted-foreground">Progression des plateaux déjeuner</p>
                         </div>
-                        <Badge className="bg-orange-500 text-white border-none rounded-none px-3 font-black text-[9px] uppercase tracking-widest h-6">Session: MIDI</Badge>
+                        <Badge className="bg-orange-600 text-white border-none rounded-none px-3 font-black text-[9px] uppercase tracking-widest h-6">Session: MIDI</Badge>
                     </CardHeader>
                     <CardContent className="p-6">
                         <div className="space-y-6">
                             <div className="space-y-2">
                                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest">
-                                    <span className="flex items-center gap-2"><CookingPot size={14} className="text-orange-500" /> Plateaux Termines</span>
+                                    <span className="flex items-center gap-2"><CookingPot size={14} className="text-orange-600" /> Plateaux Termines</span>
                                     <span>{preparedMeals} / {totalMeals} ({Math.round(progress)}%)</span>
                                 </div>
-                                <Progress value={progress} className="h-4 bg-muted border border-border rounded-none shadow-none [&>div]:bg-orange-500 [&>div]:border-r [&>div]:border-orange-600" />
+                                <Progress value={progress} className="h-4 bg-muted border border-border rounded-none shadow-none [&>div]:bg-orange-600 [&>div]:border-r [&>div]:border-orange-600" />
                             </div>
                             <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
                                 {[
                                     { label: "Entrées", val: 124, col: "muted-foreground" },
-                                    { label: "Plats Chauds", val: 108, col: "orange-500" },
+                                    { label: "Plats Chauds", val: 108, col: "orange-600" },
                                     { label: "Desserts", val: 112, col: "muted-foreground" },
                                     { label: "Régimes", val: 32, col: "blue-500" }
                                 ].map((item, i) => (
@@ -189,19 +282,19 @@ export default function KitchenDashboard() {
                 <Tabs defaultValue="planning" className="w-full">
                     <div className="flex flex-col sm:flex-row items-center justify-between gap-6 mb-6">
                         <TabsList className="bg-muted border border-border p-1 rounded-none h-10 w-full sm:w-auto">
-                            <TabsTrigger value="planning" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-500">Calendrier</TabsTrigger>
-                            <TabsTrigger value="production" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-500">Liste Production</TabsTrigger>
-                            <TabsTrigger value="recipes" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-500 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-500">Fiches Recettes</TabsTrigger>
+                            <TabsTrigger value="planning" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">Calendrier</TabsTrigger>
+                            <TabsTrigger value="production" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">Liste Production</TabsTrigger>
+                            <TabsTrigger value="recipes" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">Fiches Recettes</TabsTrigger>
                         </TabsList>
 
                         <div className="flex items-center gap-3 w-full sm:w-auto">
                             <Dialog open={isAddDishOpen} onOpenChange={setIsAddDishOpen}>
                                 <DialogTrigger asChild>
-                                    <Button className="h-10 w-full sm:w-auto border border-orange-500 bg-orange-500 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-sm rounded-none focus-visible:ring-2 focus-visible:ring-orange-500">
+                                    <Button className="h-10 w-full sm:w-auto border border-orange-600 bg-orange-600 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-sm rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">
                                         <Plus size={16} /> Nouveau Plat
                                     </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-w-md bg-card border-2 border-border p-8 rounded-none">
+                                <DialogContent className="max-w-2xl bg-card border-2 border-border p-8 rounded-none max-h-[90vh] overflow-y-auto">
                                     <DialogHeader className="mb-6">
                                         <DialogTitle className="text-xl font-black uppercase tracking-tight">Création Recette</DialogTitle>
                                         <DialogDescription className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Enregistrez un nouveau plat dans la base.</DialogDescription>
@@ -209,8 +302,9 @@ export default function KitchenDashboard() {
                                     <form onSubmit={handleAddDish} className="space-y-6">
                                         <div className="space-y-2">
                                             <Label htmlFor="dishName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nom du Plat</Label>
-                                            <Input id="dishName" value={newDish.name} onChange={(e) => setNewDish({ ...newDish, name: e.target.value })} required className="h-10 font-bold bg-muted/20 border-border rounded-none focus-visible:ring-1 focus-visible:ring-orange-500" />
+                                            <Input id="dishName" value={newDish.name} onChange={(e) => setNewDish({ ...newDish, name: e.target.value })} required className="h-10 font-bold bg-muted/20 border-border rounded-none focus-visible:ring-1 focus-visible:ring-orange-600" />
                                         </div>
+                                        
                                         <div className="grid grid-cols-2 gap-4">
                                             <div className="space-y-2">
                                                 <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Catégorie</Label>
@@ -225,16 +319,109 @@ export default function KitchenDashboard() {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
-                                            <div className="space-y-2">
-                                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Kcal</Label>
-                                                <Input type="number" value={newDish.nutritionalInfo?.calories} onChange={(e) => setNewDish({ ...newDish, nutritionalInfo: { ...newDish.nutritionalInfo!, calories: parseInt(e.target.value) } })} className="h-10 font-bold bg-muted/20 border-border rounded-none focus-visible:ring-1 focus-visible:ring-orange-500" />
+                                        </div>
+
+                                        {/* Allergens Multi-Select */}
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Allergènes</Label>
+                                            <div className="grid grid-cols-2 gap-2 p-4 bg-muted/20 border border-border rounded-none">
+                                                {ALLERGENS_LIST.map((allergen) => (
+                                                    <label key={allergen} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={newDish.allergens?.includes(allergen)}
+                                                            onChange={(e) => {
+                                                                const current = newDish.allergens || [];
+                                                                if (e.target.checked) {
+                                                                    setNewDish({ ...newDish, allergens: [...current, allergen] });
+                                                                } else {
+                                                                    setNewDish({ ...newDish, allergens: current.filter(a => a !== allergen) });
+                                                                }
+                                                            }}
+                                                            className="w-4 h-4 accent-orange-600"
+                                                        />
+                                                        <span className="text-xs font-bold">{allergen}</span>
+                                                    </label>
+                                                ))}
                                             </div>
                                         </div>
-                                        <Button type="submit" className="w-full h-12 bg-orange-500 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-none">Ajouter au Répertoire</Button>
+
+                                        {/* Nutritional Info */}
+                                        <div className="space-y-2">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Informations Nutritionnelles</Label>
+                                            <div className="grid grid-cols-4 gap-3">
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="calories" className="text-[9px] font-bold uppercase text-muted-foreground">Calories</Label>
+                                                    <Input 
+                                                        id="calories"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.calories || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                calories: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="protein" className="text-[9px] font-bold uppercase text-muted-foreground">Protéines (g)</Label>
+                                                    <Input 
+                                                        id="protein"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.protein || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                protein: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="carbs" className="text-[9px] font-bold uppercase text-muted-foreground">Glucides (g)</Label>
+                                                    <Input 
+                                                        id="carbs"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.carbs || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                carbs: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                                <div className="space-y-1">
+                                                    <Label htmlFor="fat" className="text-[9px] font-bold uppercase text-muted-foreground">Lipides (g)</Label>
+                                                    <Input 
+                                                        id="fat"
+                                                        type="number" 
+                                                        value={newDish.nutritionalInfo?.fat || 0} 
+                                                        onChange={(e) => setNewDish({ 
+                                                            ...newDish, 
+                                                            nutritionalInfo: { 
+                                                                ...newDish.nutritionalInfo!, 
+                                                                fat: parseInt(e.target.value) || 0 
+                                                            } 
+                                                        })} 
+                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <Button type="submit" className="w-full h-12 bg-orange-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-none hover:bg-orange-600">Ajouter au Répertoire</Button>
                                     </form>
                                 </DialogContent>
                             </Dialog>
-                            <Button variant="outline" className="h-10 w-full sm:w-auto px-6 border-border text-[10px] font-black uppercase tracking-widest rounded-none gap-2 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-orange-500">
+                            <Button variant="outline" className="h-10 w-full sm:w-auto px-6 border-border text-[10px] font-black uppercase tracking-widest rounded-none gap-2 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-orange-600">
                                 <Download size={16} /> Export JSON
                             </Button>
                         </div>
@@ -264,7 +451,7 @@ export default function KitchenDashboard() {
                                             {days.map((day, idx) => (
                                                 <TableHead key={day} className={cn(
                                                     "border-r border-border py-4 text-center pb-6",
-                                                    idx === 0 && "bg-orange-500/5 ring-1 ring-inset ring-orange-500/20"
+                                                    idx === 0 && "bg-orange-600/5 ring-1 ring-inset ring-orange-600/20"
                                                 )}>
                                                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground block mb-1">{day}</span>
                                                     <span className="text-xl font-black tabular-nums">{12 + idx}</span>
@@ -305,10 +492,14 @@ export default function KitchenDashboard() {
                                                                                 <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/50">{cat}</p>
                                                                                 <div className="space-y-1">
                                                                                     {catItems.map(dish => (
-                                                                                        <div key={dish.id} className="p-1 px-2 border border-orange-500/20 bg-orange-500/5 text-[9px] font-black uppercase tracking-tight flex justify-between items-center group/item">
+                                                                                        <div key={dish.id} className="p-1 px-2 border border-orange-600/20 bg-orange-600/5 text-[9px] font-black uppercase tracking-tight flex justify-between items-center group/item">
                                                                                             <span className="truncate">{dish.name}</span>
-                                                                                            <button onClick={() => handleAssignDish(dish)} className="opacity-0 group-hover/item:opacity-100 hover:text-red-500 transition-opacity">
-                                                                                                <X size={10} />
+                                                                                            <button
+                                                                                                aria-label={`Retirer ${dish.name} du menu`}
+                                                                                                onClick={() => handleAssignDish(dish)}
+                                                                                                className="opacity-0 group-hover/item:opacity-100 focus:opacity-100 hover:text-red-500 transition-opacity"
+                                                                                            >
+                                                                                                <X size={10} aria-hidden="true" />
                                                                                             </button>
                                                                                         </div>
                                                                                     ))}
@@ -324,7 +515,7 @@ export default function KitchenDashboard() {
                                                                 </div>
                                                                 <Button
                                                                     variant="outline"
-                                                                    className="h-8 w-full border border-border text-[9px] font-black uppercase rounded-none hover:bg-orange-500 hover:text-white hover:border-orange-500 focus-visible:ring-1 focus-visible:ring-orange-500"
+                                                                    className="h-8 w-full border border-border text-[9px] font-black uppercase rounded-none hover:bg-orange-600 hover:text-white hover:border-orange-600 focus-visible:ring-1 focus-visible:ring-orange-600"
                                                                     onClick={() => {
                                                                         setAssignTarget({ day, meal: meal.name });
                                                                         setIsAssignOpen(true);
@@ -374,7 +565,7 @@ export default function KitchenDashboard() {
                                                 </div>
                                             </TableCell>
                                             <TableCell className="text-right pr-8">
-                                                <Button variant="ghost" className="h-8 text-[9px] font-black uppercase tracking-widest px-4 border border-border rounded-none hover:bg-orange-500 hover:text-white hover:border-orange-500 focus-visible:ring-1 focus-visible:ring-orange-500">
+                                                <Button variant="ghost" className="h-8 text-[9px] font-black uppercase tracking-widest px-4 border border-border rounded-none hover:bg-orange-600 hover:text-white hover:border-orange-600 focus-visible:ring-1 focus-visible:ring-orange-600">
                                                     Étiquettes
                                                 </Button>
                                             </TableCell>
@@ -397,7 +588,7 @@ export default function KitchenDashboard() {
                     <div className="p-8 space-y-8">
                         <div className="relative">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                            <Input placeholder="FILTRER LE RÉPERTOIRE..." className="pl-12 h-12 bg-muted/20 border-2 border-border font-black text-xs uppercase tracking-widest rounded-none focus-visible:ring-1 focus-visible:ring-orange-500" />
+                            <Input placeholder="FILTRER LE RÉPERTOIRE..." className="pl-12 h-12 bg-muted/20 border-2 border-border font-black text-xs uppercase tracking-widest rounded-none focus-visible:ring-1 focus-visible:ring-orange-600" />
                         </div>
                         <div className="grid grid-cols-2 gap-8 max-h-[400px] overflow-y-auto pr-2 scrollbar-thin">
                             {["ENTREE", "PLAT", "DESSERT"].map(cat => (
@@ -412,7 +603,7 @@ export default function KitchenDashboard() {
                                                     onClick={() => handleAssignDish(dish)}
                                                     className={cn(
                                                         "p-3 border transition-colors cursor-pointer flex justify-between items-center",
-                                                        isSelected ? "border-orange-500 bg-orange-500/10" : "border-border bg-muted/10 hover:border-orange-500/30"
+                                                        isSelected ? "border-orange-600 bg-orange-600/10" : "border-border bg-muted/10 hover:border-orange-600/30"
                                                     )}
                                                 >
                                                     <span className="text-[10px] font-black uppercase tracking-tight">{dish.name}</span>

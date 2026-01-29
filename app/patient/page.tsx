@@ -22,10 +22,14 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 
+import { createClient } from "@/lib/supabase/client";
+import { AlertCircle } from "lucide-react";
+
 export default function PatientLoginPage() {
   const router = useRouter();
   const [id, setId] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   /**
    * @description This function is called when the user submits his patient-ID
@@ -34,14 +38,57 @@ export default function PatientLoginPage() {
    * 
    * Here it will send the patient-id to the page
    */
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setIsLoading(true);
-    // Simulation d'identification par bracelet
-    setTimeout(() => {
-      router.push("/patient/dashboard"); // TODO remove this for the new login method
+
+    if (!id.trim()) {
+        setError("Veuillez entrer votre identifiant.");
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+        const supabase = createClient();
+        
+        // 1. Recherche par UUID exact
+        let { data: patient, error: fetchError } = await supabase
+            .from('patients')
+            .select('id, last_name, first_name')
+            .eq('id', id.trim())
+            .single();
+
+        // 2. Si pas trouvé par ID, recherche par Nom de Famille (insensible à la casse)
+        if (!patient) {
+            const { data: patientsByName } = await supabase
+                .from('patients')
+                .select('id, last_name, first_name')
+                .ilike('last_name', id.trim())
+                .limit(1); // On prend le premier pour l'instant (demo)
+            
+            if (patientsByName && patientsByName.length > 0) {
+                patient = patientsByName[0];
+            }
+        }
+
+        if (patient) {
+            localStorage.setItem("currentPatientId", patient.id);
+            // Petit délai UX pour montrer que ça valide
+            setTimeout(() => {
+                router.push("/patient/dashboard"); // TODO remove this for the new login method
       router.push(`/patient/login?patient-id=${id}`)
-    }, 1000);
+            }, 500);
+        } else {
+            setError("Dossier patient introuvable. Vérifiez votre saisie.");
+            setIsLoading(false);
+        }
+
+    } catch (err) {
+        console.error("Login Error", err);
+        setError("Erreur de connexion au serveur.");
+        setIsLoading(false);
+    }
   };
 
   const handleScanQR = () => {
@@ -70,12 +117,11 @@ export default function PatientLoginPage() {
 
         <Card className="border-[6px] border-border bg-card shadow-2xl rounded-none py-0">
           <CardHeader className="p-8 border-b-4 border-border bg-muted/20">
-            <h2 className="flex flex-col items-center justify-center gap-4">
-              <div className="flex items-center gap-2">
-                <ScanLine size={32} className="text-primary animate-pulse" />
-                <CardTitle className="text-2xl font-black uppercase tracking-tight">
-                  Identification
-                </CardTitle>
+            <h2 className="flex items-center gap-4">
+              <ScanLine size={32} className="text-primary animate-pulse" />
+              <div>
+                <CardTitle className="text-2xl font-black uppercase tracking-tight">Identification</CardTitle>
+                <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">Approchez votre bracelet du lecteur</p>
               </div>
               <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest mt-1">
                 Scannez le QR Code sur le lit ou le bracelet
@@ -90,7 +136,7 @@ export default function PatientLoginPage() {
                   htmlFor="patient-id"
                   className="text-xs font-black uppercase tracking-widest text-muted-foreground ml-1"
                 >
-                  Numéro ID ou Scan Manuel
+                  Nom de Famille ou Identifiant
                 </Label>
                 <div className="relative">
                   <User
@@ -99,14 +145,21 @@ export default function PatientLoginPage() {
                   />
                   <Input
                     id="patient-id"
-                    placeholder="EX: PAT-452"
+                    placeholder="EX: LEGRAND"
                     value={id}
                     onChange={(e) => setId(e.target.value)}
                     className="pl-14 h-20 bg-muted/10 border-4 border-border text-2xl font-black uppercase placeholder:opacity-20 rounded-none focus-visible:ring-8 focus-visible:ring-primary/10"
-                    aria-label="Entrez votre identifiant patient"
+                    aria-label="Entrez votre nom ou identifiant"
                   />
                 </div>
               </div>
+
+              {error && (
+                <div className="p-4 bg-destructive/10 border-2 border-destructive text-destructive flex items-center gap-3 font-bold uppercase text-xs animate-in fade-in slide-in-from-top-1">
+                    <AlertCircle size={20} />
+                    {error}
+                </div>
+              )}
 
               <Button
                 type="submit"

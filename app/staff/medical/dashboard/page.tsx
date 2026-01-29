@@ -138,19 +138,64 @@ export default function MedicalDashboard() {
 
     const services = Array.from(new Set(MOCK_PATIENTS.map(p => p.service)));
 
-    const handleUpdatePatient = (patientId: string, updates: Partial<Patient>) => {
-        setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+    const handleUpdatePatient = async (patientId: string, updates: any) => {
+        const supabase = createClient();
+        
+        // Prepare DB object (snake_case)
+        const dbUpdates: any = {};
+        if (updates.firstName) dbUpdates.first_name = updates.firstName;
+        if (updates.lastName) dbUpdates.last_name = updates.lastName;
+        if (updates.room) dbUpdates.room = updates.room;
+        if (updates.service) dbUpdates.service = updates.service;
+        if (updates.status) dbUpdates.status = updates.status;
+        if (updates.allergies) dbUpdates.allergies = updates.allergies;
+        if (updates.dietaryRestrictions) dbUpdates.dietary_restrictions = updates.dietaryRestrictions;
+
+        const { error } = await supabase.from('patients').update(dbUpdates).eq('id', patientId);
+        
+        if (error) {
+            console.error("Update Error:", error);
+        } else {
+            setPatients(prev => prev.map(p => p.id === patientId ? { ...p, ...updates } : p));
+        }
     };
 
-    const handleAddPatient = (e: React.FormEvent) => {
+    const handleAddPatient = async (e: React.FormEvent) => {
         e.preventDefault();
-        const id = `PAT-${Math.floor(100 + Math.random() * 900)}`;
-        const patient: Patient = {
-            ...newPatient,
-            id,
-            status: "ADMITTED"
+        const supabase = createClient();
+        
+        const dbPatient = {
+            first_name: newPatient.firstName,
+            last_name: newPatient.lastName,
+            room: newPatient.room,
+            service: newPatient.service,
+            status: "ADMITTED",
+            allergies: newPatient.allergies,
+            dietary_restrictions: newPatient.dietaryRestrictions
         };
-        setPatients([patient, ...patients]);
+
+        const { data, error } = await supabase.from('patients').insert(dbPatient).select().single();
+
+        if (error) {
+            console.error("Add Error:", error);
+            alert("Erreur lors de l'admission du patient.");
+            return;
+        }
+
+        if (data) {
+            const mapped: Patient = {
+                id: data.id,
+                firstName: data.first_name,
+                lastName: data.last_name,
+                room: data.room,
+                service: data.service,
+                status: data.status,
+                allergies: data.allergies || [],
+                dietaryRestrictions: data.dietary_restrictions || []
+            };
+            setPatients([mapped, ...patients]);
+        }
+        
         setNewPatient({ firstName: "", lastName: "", room: "", service: "Cardiologie", allergies: [], dietaryRestrictions: [] });
         setIsAddPatientOpen(false);
     };

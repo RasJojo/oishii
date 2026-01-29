@@ -14,7 +14,8 @@ import {
     Coffee,
     Sun,
     Moon,
-    Clock
+    Clock,
+    Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,13 +23,17 @@ import { Badge } from "@/components/ui/badge";
 import { MOCK_PATIENTS, MOCK_DISHES, Dish, Patient } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase/client";
 
 export default function PatientDashboard() {
+    const router = useRouter();
     const [patient, setPatient] = useState<Patient | null>(null);
     const [menuDishes, setMenuDishes] = useState<Dish[]>([]); 
     const [selectedMeal, setSelectedMeal] = useState("Déjeuner");
+    const [isSaving, setIsSaving] = useState(false);
+    const [showSuccess, setShowSuccess] = useState(false);
     const [selections, setSelections] = useState<Record<string, Dish | null>>({
         "ENTREE": null,
         "PLAT": null,
@@ -84,6 +89,44 @@ export default function PatientDashboard() {
         loadData();
     }, []);
 
+    const handleLogout = () => {
+        localStorage.removeItem("currentPatientId");
+        router.push("/patient");
+    };
+
+    const handleConfirmMenu = async () => {
+        if (!patient || !selections["PLAT"]) return;
+        
+        setIsSaving(true);
+        const supabase = createClient();
+        
+        const selectionData = {
+            meal: selectedMeal,
+            selections: {
+                entree: selections["ENTREE"]?.name || "Aucun",
+                plat: selections["PLAT"].name,
+                dessert: selections["DESSERT"]?.name || "Aucun"
+            }
+        };
+
+        const { error } = await supabase
+            .from('patients')
+            .update({ 
+                last_meal_selected: JSON.stringify(selectionData),
+                status: 'ADMITTED' // Re-confirme le statut
+            })
+            .eq('id', patient.id);
+
+        if (!error) {
+            setShowSuccess(true);
+            setTimeout(() => setShowSuccess(false), 3000);
+        } else {
+            console.error("Save Error:", error);
+            alert("Erreur lors de la sauvegarde du menu.");
+        }
+        setIsSaving(false);
+    };
+
     if (!patient) return <div className="min-h-screen flex items-center justify-center bg-background"><p>Chargement...</p></div>;
 
     const categories = ["ENTREE", "PLAT", "DESSERT"];
@@ -119,14 +162,26 @@ export default function PatientDashboard() {
                             </p>
                         </div>
                     </div>
-                    <Link href="/patient">
-                        <Button variant="outline" size="icon" className="h-12 w-12 border-2 border-border font-black rounded-none shadow-sm focus-visible:ring-4 focus-visible:ring-primary">
-                            <LogOut size={24} />
-                            <span className="sr-only">Se déconnecter</span>
-                        </Button>
-                    </Link>
+                    <Button 
+                        onClick={handleLogout}
+                        variant="outline" 
+                        size="icon" 
+                        className="h-12 w-12 border-2 border-border font-black rounded-none shadow-sm focus-visible:ring-4 focus-visible:ring-primary"
+                    >
+                        <LogOut size={24} />
+                        <span className="sr-only">Se déconnecter</span>
+                    </Button>
                 </div>
             </header>
+
+            {showSuccess && (
+                <div className="fixed top-24 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-top-4">
+                     <div className="bg-primary text-primary-foreground px-8 py-4 shadow-2xl border-4 border-white font-black uppercase text-sm flex items-center gap-3">
+                         <CheckCircle2 size={24} />
+                         Choix enregistré avec succès !
+                     </div>
+                </div>
+            )}
 
             <main className="p-6 max-w-4xl mx-auto w-full space-y-10 pb-32">
                 {/* Health Alerts Summary - Very visible */}
@@ -245,11 +300,18 @@ export default function PatientDashboard() {
             <div className="fixed bottom-0 left-0 right-0 p-6 bg-card border-t-4 border-border shadow-[0_-10px_20px_-10px_rgba(0,0,0,0.1)] flex justify-center">
                 <div className="max-w-4xl w-full">
                     <Button
+                        onClick={handleConfirmMenu}
                         className="w-full h-16 font-black uppercase tracking-[0.2em] text-sm shadow-xl flex gap-3 focus-visible:ring-4 focus-visible:ring-primary rounded-none"
-                        disabled={!selections["PLAT"]}
+                        disabled={!selections["PLAT"] || isSaving}
                     >
-                        Valider mon Choix de Repas
-                        <ChevronRight size={24} />
+                        {isSaving ? (
+                            <Loader2 className="h-6 w-6 animate-spin" />
+                        ) : (
+                            <>
+                                Valider mon Choix de Repas
+                                <ChevronRight size={24} />
+                            </>
+                        )}
                     </Button>
                 </div>
             </div>

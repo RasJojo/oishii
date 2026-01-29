@@ -151,14 +151,42 @@ export default function KitchenDashboard() {
     const preparedMeals = MOCK_PATIENTS.filter(p => p.status === "ADMITTED").length;
     const progress = (preparedMeals / totalMeals) * 100;
 
-    const handleAddDish = (e: React.FormEvent) => {
+    const handleAddDish = async (e: React.FormEvent) => {
         e.preventDefault();
-        const id = `DISH-${Math.floor(100 + Math.random() * 900)}`;
-        const dish: Dish = {
-            ...newDish as Dish,
-            id,
+        const supabase = createClient();
+        
+        // Mapping CamelCase -> Snake_case for DB
+        const dishData = {
+            name: newDish.name,
+            category: newDish.category,
+            allergens: newDish.allergens,
+            nutritional_info: newDish.nutritionalInfo,
+            available: true
         };
-        setDishes([dish, ...dishes]);
+
+        const { data, error } = await supabase
+            .from('dishes')
+            .insert(dishData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error adding dish:", error);
+            alert("Erreur lors de la création du plat.");
+            return;
+        }
+
+        if (data) {
+            const mappedDish: Dish = {
+                id: data.id,
+                name: data.name,
+                category: data.category,
+                allergens: data.allergens || [],
+                nutritionalInfo: data.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            };
+            setDishes([mappedDish, ...dishes]);
+        }
+
         setNewDish({
             name: "",
             category: "PLAT",

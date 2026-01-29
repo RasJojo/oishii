@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, X, AlertTriangle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, X, AlertTriangle, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Dish, Ingredient, ALLERGENS_LIST, detectAllergensFromIngredients } from "@/lib/mock-data";
+import { INGREDIENTS_DB, IngredientRef } from "@/lib/ingredients-db";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface DishCreationModalProps {
     open: boolean;
@@ -34,6 +36,26 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
         unit: "g",
         allergen: undefined
     });
+
+    // Suggestions d'ingrédients
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    
+    const suggestions = useMemo(() => {
+        if (!newIngredient.name || newIngredient.name.length < 2) return [];
+        return INGREDIENTS_DB.filter(ing => 
+            ing.name.toLowerCase().includes(newIngredient.name!.toLowerCase())
+        ).slice(0, 5);
+    }, [newIngredient.name]);
+
+    const handleSelectSuggestion = (suggestion: IngredientRef) => {
+        setNewIngredient({
+            ...newIngredient,
+            name: suggestion.name,
+            unit: suggestion.defaultUnit,
+            allergen: suggestion.allergen
+        });
+        setShowSuggestions(false);
+    };
 
     const handleAddIngredient = () => {
         if (newIngredient.name && newIngredient.quantity && newIngredient.unit) {
@@ -96,7 +118,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                 <DialogHeader className="mb-6">
                     <DialogTitle className="text-2xl font-black uppercase tracking-tight">Création Recette</DialogTitle>
                     <DialogDescription className="text-xs font-bold uppercase text-muted-foreground tracking-widest">
-                        Enregistrez un nouveau plat avec ses ingrédients
+                        Enregistrez un nouveau plat. Utilisez la base d'ingrédients pour la détection automatique.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -145,20 +167,41 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                     </div>
 
                     {/* Ajout d'ingrédients */}
-                    <div className="space-y-3 border-2 border-border p-4 bg-muted/5">
+                    <div className="space-y-3 border-2 border-border p-4 bg-muted/5 z-20 overflow-visible relative">
                         <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
                             Ingrédients
                         </Label>
                         
                         {/* Formulaire d'ajout d'ingrédient */}
-                        <div className="grid grid-cols-12 gap-2">
-                            <div className="col-span-5">
+                        <div className="grid grid-cols-12 gap-2 relative">
+                            <div className="col-span-5 relative">
                                 <Input
-                                    placeholder="Nom de l'ingrédient"
+                                    placeholder="Rechercher un ingrédient..."
                                     value={newIngredient.name}
-                                    onChange={(e) => setNewIngredient({ ...newIngredient, name: e.target.value })}
+                                    onChange={(e) => {
+                                        setNewIngredient({ ...newIngredient, name: e.target.value });
+                                        setShowSuggestions(true);
+                                    }}
+                                    onFocus={() => setShowSuggestions(true)}
+                                    // onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                     className="h-9 text-xs font-bold bg-background border-border rounded-none"
                                 />
+                                {showSuggestions && suggestions.length > 0 && (
+                                    <div className="absolute top-full left-0 w-full bg-card border border-border shadow-lg z-50 mt-1 max-h-40 overflow-y-auto">
+                                        {suggestions.map((suggestion) => (
+                                            <div
+                                                key={suggestion.name}
+                                                className="p-2 hover:bg-muted cursor-pointer text-xs font-bold flex justify-between items-center"
+                                                onClick={() => handleSelectSuggestion(suggestion)}
+                                            >
+                                                <span>{suggestion.name}</span>
+                                                {suggestion.allergen && (
+                                                    <span className="text-[9px] bg-red-100 text-red-600 px-1 py-0.5 rounded">{suggestion.allergen}</span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                             <div className="col-span-2">
                                 <Input
@@ -179,16 +222,19 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                         <SelectItem value="ml">ml</SelectItem>
                                         <SelectItem value="pièce">pièce</SelectItem>
                                         <SelectItem value="c. à soupe">c. à soupe</SelectItem>
+                                        <SelectItem value="tranche">tranche</SelectItem>
+                                        <SelectItem value="sachet">sachet</SelectItem>
+                                        <SelectItem value="gousse">gousse</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div className="col-span-2">
                                 <Select value={newIngredient.allergen || "none"} onValueChange={(v) => setNewIngredient({ ...newIngredient, allergen: v === "none" ? undefined : v })}>
-                                    <SelectTrigger className="h-9 text-xs font-bold bg-background border-border rounded-none">
+                                    <SelectTrigger className={cn("h-9 text-xs font-bold border-border rounded-none", newIngredient.allergen ? "bg-red-50 border-red-200 text-red-700" : "bg-background")}>
                                         <SelectValue placeholder="Allergène" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60">
-                                        <SelectItem value="none" className="text-xs">Aucun</SelectItem>
+                                        <SelectItem value="none" className="text-xs opacity-50">Aucun</SelectItem>
                                         {ALLERGENS_LIST.map(allergen => (
                                             <SelectItem key={allergen} value={allergen} className="text-xs">{allergen}</SelectItem>
                                         ))}

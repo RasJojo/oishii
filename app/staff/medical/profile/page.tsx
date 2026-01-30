@@ -96,7 +96,7 @@ const ProfilePage = () => {
     return (
         <div className="flex flex-col min-h-screen bg-background text-foreground font-sans">
             {/* Header */}
-            <header className="sticky top-0 z-30 w-full border-b bg-card px-6 h-16 flex items-center shadow-sm">
+            <header className="sticky top-0 z-20 w-full border-b bg-card px-6 h-16 flex items-center shadow-sm">
                 <div className="flex items-center justify-between max-w-7xl mx-auto w-full">
                     <div className="flex items-center gap-3">
                         <div className="p-2 border border-primary/20 bg-primary/5 text-primary">

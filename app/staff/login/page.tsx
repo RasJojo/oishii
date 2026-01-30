@@ -1,7 +1,26 @@
 import StaffLogin from "@/components/staff-login";
-import { Terminal } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { redirect } from "next/navigation";
 
-export default function Page() {
+export default async function Page() {
+
+    const supabase = createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (user) {
+
+        // select profile from profiles where user_id = user.id
+        const { data: profile } = await supabase.from("profiles").select("role").eq("user_id", user.id).single();
+        
+        if (profile && profile.role === "KITCHEN") {
+            return redirect("/staff/kitchen/dashboard");
+        } else if (profile && profile.role === "MEDICAL") {
+            return redirect("/staff/medical/dashboard");
+        } else {
+            return redirect("/staff/error");
+        }
+    }
+    
     return (
         <div className="relative flex min-h-svh w-full items-center justify-center p-6 md:p-10 bg-background overflow-hidden font-sans">
             {/* Simple Industrial Background - High Contrast */}

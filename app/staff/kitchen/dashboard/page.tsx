@@ -23,7 +23,8 @@ import {
     Sun,
     Moon,
     X,
-    MoreHorizontal
+    MoreHorizontal,
+    Loader2
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -57,88 +58,232 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DishCreationModal } from "@/components/dish-creation-modal";
 import { MOCK_PATIENTS, MOCK_DISHES, Patient, Dish, ALLERGENS_LIST } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-
 import { createClient } from "@/lib/supabase/client";
-
-// ... existing imports
 
 export default function KitchenDashboard() {
     const [searchTerm, setSearchTerm] = useState("");
     const [dishes, setDishes] = useState<Dish[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAddDishOpen, setIsAddDishOpen] = useState(false);
+    const [productionCounts, setProductionCounts] = useState<Record<string, number>>({});
 
     // State for the weekly planning
-    const [planning, setPlanning] = useState<Record<string, Dish[]>>({
-        "Lundi-Déjeuner": [], // Will be populated from DB later
-        "Lundi-Dîner": [],
-    });
+    const [planning, setPlanning] = useState<Record<string, Dish[]>>({});
+    const [chefName, setChefName] = useState<string | null>(null);
+
+    const fetchPlanning = async () => {
+        const supabase = createClient();
+        const { data: mealsData, error: mealsError } = await supabase
+            .from('meals')
+            .select(`
+                id, day, meal_type,
+                meal_dishes( dish_id )
+            `);
+        
+        if (mealsData) {
+            const newPlanning: Record<string, Dish[]> = {};
+            // We need the full dish objects, so let's use the local dishes state or refetch if needed
+            // But since dishes are fetched separately, we can map them here.
+            // Wait, we need to ensure dishes are already fetched.
+            
+            // For now, let's fetch all dishes once
+            const { data: dishesData } = await supabase.from('dishes').select(`
+                id, name, category, nutritional_info, available,
+                dishes_allergens ( allergens ( id, name ) )
+             `);
+             
+             const mappedDishes: Dish[] = dishesData?.map((d: any) => ({
+                id: d.id,
+                name: d.name,
+                category: d.category,
+                allergens: d.dishes_allergens?.map((da: any) => da.allergens?.name).filter(Boolean) || [],
+                nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
+            })) || [];
+
+            mealsData.forEach((m: any) => {
+                const key = `${m.day}-${m.meal_type}`;
+                const dishIds = m.meal_dishes.map((md: any) => md.dish_id);
+                newPlanning[key] = mappedDishes.filter(d => dishIds.includes(d.id));
+            });
+            setPlanning(newPlanning);
+            if (mappedDishes.length > 0) setDishes(mappedDishes);
+            setIsLoading(false);
+        } else {
+            setIsLoading(false);
+        }
+    };
+
+    const fetchProductionCounts = async () => {
+        const supabase = createClient();
+        console.log("Fetching production counts...");
+        const { data: patients, error } = await supabase
+            .from('patients')
+            .select('last_meal_selected');
+        
+        if (error) {
+            console.error("Error fetching patients for production:", error);
+            return;
+        }
+
+        if (patients) {
+            console.log(`Found ${patients.length} patients`);
+            const counts: Record<string, number> = {};
+            patients.forEach(p => {
+                if (p.last_meal_selected) {
+                    try {
+                        const selection = typeof p.last_meal_selected === 'string' 
+                            ? JSON.parse(p.last_meal_selected) 
+                            : p.last_meal_selected;
+                            
+                        if (selection.selections) {
+                            ['entree', 'plat', 'dessert'].forEach(cat => {
+                                const dishName = selection.selections[cat];
+                                if (dishName && dishName !== "Aucun") {
+                                    counts[dishName] = (counts[dishName] || 0) + 1;
+                                }
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Error parsing patient selection", e, p.last_meal_selected);
+                    }
+                }
+            });
+            console.log("Calculated production counts:", counts);
+            setProductionCounts(counts);
+        }
+    };
 
     useEffect(() => {
-        const fetchDishes = async () => {
-            setIsLoading(true);
-            try {
-                const supabase = createClient();
-                const { data, error } = await supabase.from('dishes').select('*');
-                
-                if (error) {
-                    console.error("Error fetching dishes:", error);
-                    // Fallback to mock if DB fails (e.g. table missing)
-                    setDishes(MOCK_DISHES); 
-                } else if (data) {
-                    // Map DB snake_case to TS camelCase if needed, or adjust types.
-                    // The DB schema uses snake_case keys (nutritional_info) but code uses camelCase.
-                    const mappedDishes: Dish[] = data.map((d: any) => ({
-                        id: d.id,
-                        name: d.name,
-                        category: d.category,
-                        allergens: d.allergens || [],
-                        nutritionalInfo: d.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 }
-                    }));
-                    setDishes(mappedDishes.length > 0 ? mappedDishes : MOCK_DISHES);
-                }
-            } catch (e) {
-                console.error("Supabase client error", e);
-                setDishes(MOCK_DISHES);
-            } finally {
-                setIsLoading(false);
-            }
+        const fetchProfile = async () => {
+             const supabase = createClient();
+             const { data: { user } } = await supabase.auth.getUser();
+             
+             if (user) {
+                 const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('full_name')
+                    .eq('id', user.id)
+                    .single();
+                 
+                 if (profile && profile.full_name) {
+                     setChefName(profile.full_name);
+                 } else {
+                     setChefName("CHEF DE CUISINE");
+                 }
+             }
         };
-
-        fetchDishes();
+        fetchProfile();
+        fetchPlanning();
+        fetchProductionCounts();
     }, []);
+
+    // ... (rest of search/loading state is handled by effects)
 
     const [isAssignOpen, setIsAssignOpen] = useState(false);
     const [assignTarget, setAssignTarget] = useState<{ day: string, meal: string } | null>(null);
-
-    // New dish form state
-    const [newDish, setNewDish] = useState<Partial<Dish>>({
-        name: "",
-        category: "PLAT",
-        allergens: [],
-        nutritionalInfo: { calories: 0, protein: 0, carbs: 0, fat: 0 }
-    });
 
     const totalMeals = MOCK_PATIENTS.length;
     const preparedMeals = MOCK_PATIENTS.filter(p => p.status === "ADMITTED").length;
     const progress = (preparedMeals / totalMeals) * 100;
 
-    const handleAddDish = (e: React.FormEvent) => {
-        e.preventDefault();
-        const id = `DISH-${Math.floor(100 + Math.random() * 900)}`;
-        const dish: Dish = {
-            ...newDish as Dish,
-            id,
+    const handlePublishMenu = async () => {
+        const supabase = createClient();
+        setIsLoading(true);
+
+        try {
+            // 1. Delete all existing meals for the week
+            const { error: deleteError } = await supabase
+                .from('meals')
+                .delete()
+                .in('day', days);
+            
+            if (deleteError) throw deleteError;
+
+            // 2. Insert new meals and their dishes
+            for (const [key, selectedDishes] of Object.entries(planning)) {
+                if (!selectedDishes || selectedDishes.length === 0) continue;
+                
+                const [day, mealType] = key.split('-');
+                
+                const { data: meal, error: mealError } = await supabase
+                    .from('meals')
+                    .insert({ day, meal_type: mealType })
+                    .select()
+                    .single();
+                
+                if (mealError) throw mealError;
+
+                if (meal && selectedDishes.length > 0) {
+                    const links = selectedDishes.map(d => ({
+                        meal_id: meal.id,
+                        dish_id: d.id
+                    }));
+                    const { error: linkError } = await supabase.from('meal_dishes').insert(links);
+                    if (linkError) throw linkError;
+                }
+            }
+            alert("Le menu a été publié avec succès !");
+            await fetchPlanning();
+        } catch (e) {
+            console.error("Error publishing menu", e);
+            alert("Erreur lors de la publication du menu.");
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleAddDish = async (dishFromModal: Partial<Dish>) => {
+        const supabase = createClient();
+        
+        const dishData = {
+            name: dishFromModal.name,
+            category: dishFromModal.category,
+            nutritional_info: dishFromModal.nutritionalInfo,
+            available: true
         };
-        setDishes([dish, ...dishes]);
-        setNewDish({
-            name: "",
-            category: "PLAT",
-            allergens: [],
-            nutritionalInfo: { calories: 0, protein: 0, carbs: 0, fat: 0 }
-        });
+
+        const { data, error } = await supabase
+            .from('dishes')
+            .insert(dishData)
+            .select()
+            .single();
+
+        if (error) {
+            console.error("Error adding dish:", error);
+            alert("Erreur lors de la création du plat.");
+            return;
+        }
+
+        if (data && dishFromModal.allergens && dishFromModal.allergens.length > 0) {
+            const { data: allergenData } = await supabase
+                .from('allergens')
+                .select('id, name')
+                .in('name', dishFromModal.allergens);
+            
+            if (allergenData && allergenData.length > 0) {
+                const allergenLinks = allergenData.map(a => ({
+                    dish_id: data.id,
+                    allergen_id: a.id
+                }));
+                await supabase.from('dishes_allergens').insert(allergenLinks);
+            }
+        }
+
+        if (data) {
+            const mappedDish: Dish = {
+                id: data.id,
+                name: data.name,
+                category: data.category,
+                allergens: dishFromModal.allergens || [],
+                nutritionalInfo: data.nutritional_info || { calories: 0, protein: 0, carbs: 0, fat: 0 },
+                ingredients: dishFromModal.ingredients
+            };
+            setDishes([mappedDish, ...dishes]);
+        }
+
         setIsAddDishOpen(false);
     };
 
@@ -178,11 +323,11 @@ export default function KitchenDashboard() {
 
                     <div className="flex items-center gap-4">
                         <div className="text-right hidden sm:block">
-                            <p className="text-xs font-black">Chef Bernard</p>
+                            <p className="text-xs font-black">{chefName || "Chef de Cuisine"}</p>
                             <p className="text-[9px] text-muted-foreground font-bold uppercase tracking-widest text-right">Cuisine Centrale</p>
                         </div>
                         <div className="h-8 w-8 border border-orange-600/20 bg-orange-600/10 flex items-center justify-center text-orange-600 font-black text-xs uppercase">
-                            CB
+                            {chefName ? chefName.substring(0,2).toUpperCase() : "CC"}
                         </div>
                     </div>
                 </div>
@@ -230,143 +375,21 @@ export default function KitchenDashboard() {
                         <TabsList className="bg-muted border border-border p-1 rounded-none h-10 w-full sm:w-auto">
                             <TabsTrigger value="planning" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">Calendrier</TabsTrigger>
                             <TabsTrigger value="production" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">Liste Production</TabsTrigger>
-                            <TabsTrigger value="recipes" className="text-[10px] font-black uppercase tracking-widest px-6 h-8 data-[state=active]:bg-orange-600 data-[state=active]:text-white rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">Fiches Recettes</TabsTrigger>
                         </TabsList>
 
                         <div className="flex items-center gap-3 w-full sm:w-auto">
-                            <Dialog open={isAddDishOpen} onOpenChange={setIsAddDishOpen}>
-                                <DialogTrigger asChild>
-                                    <Button className="h-10 w-full sm:w-auto border border-orange-600 bg-orange-600 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-sm rounded-none focus-visible:ring-2 focus-visible:ring-orange-600">
-                                        <Plus size={16} /> Nouveau Plat
-                                    </Button>
-                                </DialogTrigger>
-                                <DialogContent className="max-w-2xl bg-card border-2 border-border p-8 rounded-none max-h-[90vh] overflow-y-auto">
-                                    <DialogHeader className="mb-6">
-                                        <DialogTitle className="text-xl font-black uppercase tracking-tight">Création Recette</DialogTitle>
-                                        <DialogDescription className="text-xs font-bold uppercase text-muted-foreground tracking-widest">Enregistrez un nouveau plat dans la base.</DialogDescription>
-                                    </DialogHeader>
-                                    <form onSubmit={handleAddDish} className="space-y-6">
-                                        <div className="space-y-2">
-                                            <Label htmlFor="dishName" className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Nom du Plat</Label>
-                                            <Input id="dishName" value={newDish.name} onChange={(e) => setNewDish({ ...newDish, name: e.target.value })} required className="h-10 font-bold bg-muted/20 border-border rounded-none focus-visible:ring-1 focus-visible:ring-orange-600" />
-                                        </div>
-                                        
-                                        <div className="grid grid-cols-2 gap-4">
-                                            <div className="space-y-2">
-                                                <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Catégorie</Label>
-                                                <Select value={newDish.category} onValueChange={(v: any) => setNewDish({ ...newDish, category: v })}>
-                                                    <SelectTrigger className="h-10 font-bold bg-muted/20 border-border rounded-none">
-                                                        <SelectValue />
-                                                    </SelectTrigger>
-                                                    <SelectContent className="rounded-none border-border">
-                                                        <SelectItem value="ENTREE" className="font-bold text-[10px]">ENTREE</SelectItem>
-                                                        <SelectItem value="PLAT" className="font-bold text-[10px]">PLAT</SelectItem>
-                                                        <SelectItem value="DESSERT" className="font-bold text-[10px]">DESSERT</SelectItem>
-                                                    </SelectContent>
-                                                </Select>
-                                            </div>
-                                        </div>
-
-                                        {/* Allergens Multi-Select */}
-                                        <div className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Allergènes</Label>
-                                            <div className="grid grid-cols-2 gap-2 p-4 bg-muted/20 border border-border rounded-none">
-                                                {ALLERGENS_LIST.map((allergen) => (
-                                                    <label key={allergen} className="flex items-center gap-2 cursor-pointer hover:bg-muted/50 p-2 rounded-none">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={newDish.allergens?.includes(allergen)}
-                                                            onChange={(e) => {
-                                                                const current = newDish.allergens || [];
-                                                                if (e.target.checked) {
-                                                                    setNewDish({ ...newDish, allergens: [...current, allergen] });
-                                                                } else {
-                                                                    setNewDish({ ...newDish, allergens: current.filter(a => a !== allergen) });
-                                                                }
-                                                            }}
-                                                            className="w-4 h-4 accent-orange-600"
-                                                        />
-                                                        <span className="text-xs font-bold">{allergen}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-
-                                        {/* Nutritional Info */}
-                                        <div className="space-y-2">
-                                            <Label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Informations Nutritionnelles</Label>
-                                            <div className="grid grid-cols-4 gap-3">
-                                                <div className="space-y-1">
-                                                    <Label htmlFor="calories" className="text-[9px] font-bold uppercase text-muted-foreground">Calories</Label>
-                                                    <Input 
-                                                        id="calories"
-                                                        type="number" 
-                                                        value={newDish.nutritionalInfo?.calories || 0} 
-                                                        onChange={(e) => setNewDish({ 
-                                                            ...newDish, 
-                                                            nutritionalInfo: { 
-                                                                ...newDish.nutritionalInfo!, 
-                                                                calories: parseInt(e.target.value) || 0 
-                                                            } 
-                                                        })} 
-                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <Label htmlFor="protein" className="text-[9px] font-bold uppercase text-muted-foreground">Protéines (g)</Label>
-                                                    <Input 
-                                                        id="protein"
-                                                        type="number" 
-                                                        value={newDish.nutritionalInfo?.protein || 0} 
-                                                        onChange={(e) => setNewDish({ 
-                                                            ...newDish, 
-                                                            nutritionalInfo: { 
-                                                                ...newDish.nutritionalInfo!, 
-                                                                protein: parseInt(e.target.value) || 0 
-                                                            } 
-                                                        })} 
-                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <Label htmlFor="carbs" className="text-[9px] font-bold uppercase text-muted-foreground">Glucides (g)</Label>
-                                                    <Input 
-                                                        id="carbs"
-                                                        type="number" 
-                                                        value={newDish.nutritionalInfo?.carbs || 0} 
-                                                        onChange={(e) => setNewDish({ 
-                                                            ...newDish, 
-                                                            nutritionalInfo: { 
-                                                                ...newDish.nutritionalInfo!, 
-                                                                carbs: parseInt(e.target.value) || 0 
-                                                            } 
-                                                        })} 
-                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
-                                                    />
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <Label htmlFor="fat" className="text-[9px] font-bold uppercase text-muted-foreground">Lipides (g)</Label>
-                                                    <Input 
-                                                        id="fat"
-                                                        type="number" 
-                                                        value={newDish.nutritionalInfo?.fat || 0} 
-                                                        onChange={(e) => setNewDish({ 
-                                                            ...newDish, 
-                                                            nutritionalInfo: { 
-                                                                ...newDish.nutritionalInfo!, 
-                                                                fat: parseInt(e.target.value) || 0 
-                                                            } 
-                                                        })} 
-                                                        className="h-9 font-bold bg-muted/20 border-border rounded-none text-xs" 
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <Button type="submit" className="w-full h-12 bg-orange-600 text-white font-black uppercase tracking-[0.2em] text-[10px] rounded-none hover:bg-orange-600">Ajouter au Répertoire</Button>
-                                    </form>
-                                </DialogContent>
-                            </Dialog>
+                            <DishCreationModal 
+                                open={isAddDishOpen} 
+                                onOpenChange={setIsAddDishOpen} 
+                                onSubmit={handleAddDish} 
+                            />
+                            <Button 
+                                onClick={() => setIsAddDishOpen(true)}
+                                className="h-10 w-full sm:w-auto border border-orange-600 bg-orange-600 text-white font-black uppercase tracking-widest text-[10px] gap-2 shadow-sm rounded-none focus-visible:ring-2 focus-visible:ring-orange-600"
+                            >
+                                <Plus size={16} /> Nouveau Plat
+                            </Button>
+                            
                             <Button variant="outline" className="h-10 w-full sm:w-auto px-6 border-border text-[10px] font-black uppercase tracking-widest rounded-none gap-2 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-orange-600">
                                 <Download size={16} /> Export JSON
                             </Button>
@@ -384,8 +407,13 @@ export default function KitchenDashboard() {
                                         <Button variant="ghost" size="icon" className="h-7 w-7 rounded-none hover:bg-muted focus-visible:ring-1 focus-visible:ring-primary"><ChevronRight size={16} /></Button>
                                     </div>
                                 </div>
-                                <Button className="h-9 px-6 bg-orange-600 font-black text-[10px] uppercase tracking-widest rounded-none shadow-sm gap-2">
-                                    <CalendarIcon size={14} /> Publier Menu Patient
+                                <Button 
+                                    onClick={handlePublishMenu}
+                                    disabled={isLoading}
+                                    className="h-9 px-6 bg-orange-600 font-black text-[10px] uppercase tracking-widest rounded-none shadow-sm gap-2"
+                                >
+                                    {isLoading ? <Loader2 className="animate-spin h-4 w-4" /> : <CalendarIcon size={14} />}
+                                    Publier Menu Patient
                                 </Button>
                             </div>
 
@@ -495,7 +523,7 @@ export default function KitchenDashboard() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {dishes.map(dish => (
+                                    {dishes.filter(d => productionCounts[d.name] > 0).map(dish => (
                                         <TableRow key={dish.id} className="border-b border-border/50 hover:bg-muted/5">
                                             <TableCell className="py-5 px-8">
                                                 <p className="font-black text-xs uppercase tracking-tight">{dish.name}</p>
@@ -504,7 +532,9 @@ export default function KitchenDashboard() {
                                             <TableCell>
                                                 <Badge variant="outline" className="text-[8px] font-black border-border rounded-none px-2 uppercase bg-muted/20">{dish.category}</Badge>
                                             </TableCell>
-                                            <TableCell className="text-center font-black italic">24</TableCell>
+                                            <TableCell className="text-center font-black italic text-lg text-orange-600">
+                                                {productionCounts[dish.name] || 0}
+                                            </TableCell>
                                             <TableCell>
                                                 <div className="flex flex-wrap gap-1">
                                                     {dish.allergens.map(a => <span key={a} className="text-[8px] font-black uppercase px-1 border border-destructive/20 bg-destructive/5 text-destructive">{a}</span>)}
@@ -517,6 +547,13 @@ export default function KitchenDashboard() {
                                             </TableCell>
                                         </TableRow>
                                     ))}
+                                    {Object.keys(productionCounts).length === 0 && (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="py-20 text-center text-xs font-bold text-muted-foreground uppercase tracking-widest italic opacity-50">
+                                                Aucune sélection patient enregistrée pour le moment.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </TableBody>
                             </Table>
                         </Card>

@@ -9,6 +9,9 @@ import {
   Clock,
   Plus,
   UserPlus,
+  Power,
+  UserX,
+  UserCheck,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -290,6 +293,14 @@ export default function MedicalDashboard() {
     handleUpdatePatient(editingPatient.id, { dietaryRestrictions: newDiets });
   };
 
+  const togglePatientStatus = async (patientId: string, currentStatus: string) => {
+    const newStatus = currentStatus === "DISABLED" ? "ADMITTED" : "DISABLED";
+    await handleUpdatePatient(patientId, { status: newStatus });
+    if (editingPatient?.id === patientId) {
+      setEditingPatient({ ...editingPatient, status: newStatus });
+    }
+  };
+
   return (
     <div className="flex-1 p-6 space-y-6">
       {/* Service Filter Nav */}
@@ -335,7 +346,7 @@ export default function MedicalDashboard() {
             },
             {
               label: "En attente",
-              val: patients.filter((p) => p.status === "PENDING_SELECTION")
+              val: patients.filter((p) => p.status === "PENDING")
                 .length,
               icon: Clock,
               color: "secondary",
@@ -622,18 +633,41 @@ export default function MedicalDashboard() {
                 {filteredPatients.map((patient) => (
                   <TableRow
                     key={patient.id}
-                    className="border-b border-border/50 hover:bg-muted/5 group"
+                    className={cn(
+                      "border-b border-border/50 hover:bg-muted/5 group",
+                      patient.status === "DISABLED" && "opacity-50 bg-muted/20"
+                    )}
                   >
                     <TableCell className="py-4 pl-6">
                       <div className="flex items-center gap-4">
-                        <div className="h-10 w-10 border border-border bg-muted/50 flex items-center justify-center font-black text-xs text-muted-foreground">
+                        <div className={cn(
+                          "h-10 w-10 border flex items-center justify-center font-black text-xs relative",
+                          patient.status === "DISABLED" 
+                            ? "border-muted-foreground/30 bg-muted/30 text-muted-foreground/50" 
+                            : "border-border bg-muted/50 text-muted-foreground"
+                        )}>
                           {patient.firstName[0]}
                           {patient.lastName[0]}
+                          {patient.status === "DISABLED" && (
+                            <div className="absolute -top-1 -right-1 h-4 w-4 bg-muted-foreground rounded-full flex items-center justify-center">
+                              <UserX size={10} className="text-background" />
+                            </div>
+                          )}
                         </div>
                         <div>
-                          <p className="font-black text-xs uppercase tracking-tight">
-                            {patient.lastName} {patient.firstName}
-                          </p>
+                          <div className="flex items-center gap-2">
+                            <p className={cn(
+                              "font-black text-xs uppercase tracking-tight",
+                              patient.status === "DISABLED" && "line-through text-muted-foreground"
+                            )}>
+                              {patient.lastName} {patient.firstName}
+                            </p>
+                            {patient.status === "DISABLED" && (
+                              <Badge variant="secondary" className="text-[7px] px-1 py-0 font-black uppercase rounded-none bg-muted-foreground/20">
+                                Inactif
+                              </Badge>
+                            )}
+                          </div>
                           <p className="text-[9px] font-mono text-muted-foreground/60 uppercase">
                             ID: {patient.id}
                           </p>
@@ -710,7 +744,7 @@ export default function MedicalDashboard() {
                             </div>
                           </SheetHeader>
 
-                          <div className="p-8 space-y-10 h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin">
+                          <div className="p-8 pb-26 space-y-10 h-[calc(100vh-180px)] overflow-y-auto scrollbar-thin">
                             <section className="space-y-4">
                               <div className="flex items-center justify-between border-b border-border pb-2">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-destructive flex items-center gap-2">
@@ -755,7 +789,7 @@ export default function MedicalDashboard() {
                               </div>
                             </section>
 
-                            <section className="space-y-4 pb-20">
+                            <section className="space-y-4">
                               <div className="flex items-center justify-between border-b border-border pb-2">
                                 <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary flex items-center gap-2">
                                   <Plus size={14} /> Régimes
@@ -796,8 +830,57 @@ export default function MedicalDashboard() {
                                 ))}
                               </div>
                             </section>
-                          </div>
 
+                            {/* Section Statut du Patient */}
+                            <section className="space-y-4">
+                              <div className="flex items-center justify-between border-b border-border pb-2">
+                                <h3 className="text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-2">
+                                  <Power size={14} /> Statut du Patient
+                                </h3>
+                              </div>
+                              <div 
+                                className={cn(
+                                  "p-4 border-2 transition-all",
+                                  editingPatient?.status === "DISABLED"
+                                    ? "border-muted-foreground/30 bg-muted/20"
+                                    : "border-green-500/30 bg-green-500/5"
+                                )}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    {editingPatient?.status === "DISABLED" ? (
+                                      <UserX size={20} className="text-muted-foreground" />
+                                    ) : (
+                                      <UserCheck size={20} className="text-green-600" />
+                                    )}
+                                    <div>
+                                      <p className="text-xs font-black uppercase">
+                                        {editingPatient?.status === "DISABLED" ? "Patient Inactif" : "Patient Actif"}
+                                      </p>
+                                      <p className="text-[9px] text-muted-foreground">
+                                        {editingPatient?.status === "DISABLED" 
+                                          ? "Ce patient ne peut plus commander de repas" 
+                                          : "Ce patient peut commander ses repas normalement"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <Button
+                                    variant={editingPatient?.status === "DISABLED" ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => editingPatient && togglePatientStatus(editingPatient.id, editingPatient.status)}
+                                    className={cn(
+                                      "h-9 px-4 text-[9px] font-black uppercase tracking-wide",
+                                      editingPatient?.status === "DISABLED"
+                                        ? "bg-green-600 hover:bg-green-700 text-white border-green-600"
+                                        : "border-destructive/50 text-destructive hover:bg-destructive hover:text-white"
+                                    )}
+                                  >
+                                    {editingPatient?.status === "DISABLED" ? "Réactiver" : "Désactiver"}
+                                  </Button>
+                                </div>
+                              </div>
+                            </section>
+                          </div>
                           <div className="absolute bottom-8 left-8 right-8">
                             <Button className="w-full h-14 font-black uppercase tracking-[0.2em] text-[11px] shadow-xl border-2 border-primary">
                               Enregistrer le Profil

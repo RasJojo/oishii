@@ -14,11 +14,11 @@ import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 
 // Interface for DB Ingredient
-interface IngredientRef {
+interface DBIngredient {
     id: string;
     name: string;
     description?: string;
-    allergen?: string; // Back to string matching because DB table has no allergen_id column
+    allergen_id?: string | null;
     default_unit: string;
 }
 
@@ -45,7 +45,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
     const [fat, setFat] = useState(0);
     
     // DB State
-    const [ingredientsCatalog, setIngredientsCatalog] = useState<IngredientRef[]>([]);
+    const [ingredientsCatalog, setIngredientsCatalog] = useState<DBIngredient[]>([]);
     const [allergensList, setAllergensList] = useState<AllergenRef[]>([]);
 
     // Fetch Reference Data (Ingredients & Allergens)
@@ -85,10 +85,13 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
         if (!newIngredient.name || newIngredient.name.length < 2) return [];
         return ingredientsCatalog.filter(ing => 
             ing.name.toLowerCase().includes(newIngredient.name!.toLowerCase())
-        ).slice(0, 5);
-    }, [newIngredient.name, ingredientsCatalog]);
+        ).slice(0, 5).map(ing => ({
+            ...ing,
+            allergen: allergensList.find(a => a.id === ing.allergen_id)?.name
+        }));
+    }, [newIngredient.name, ingredientsCatalog, allergensList]);
 
-    const handleSelectSuggestion = (suggestion: IngredientRef) => {
+    const handleSelectSuggestion = (suggestion: DBIngredient & { allergen?: string }) => {
         setNewIngredient({
             ...newIngredient,
             name: suggestion.name,
@@ -219,9 +222,11 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                         </Label>
                         
                         {/* Formulaire d'ajout d'ingrédient */}
-                        <div className="grid grid-cols-12 gap-2 relative">
-                            <div className="col-span-5 relative">
+                        <div className="grid grid-cols-12 gap-2 relative items-end">
+                            <div className="col-span-4 relative">
+                                <Label htmlFor="ingredient-search" className="sr-only">Rechercher un ingrédient</Label>
                                 <Input
+                                    id="ingredient-search"
                                     placeholder="Rechercher un ingrédient..."
                                     value={newIngredient.name}
                                     onChange={(e) => {
@@ -233,12 +238,15 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                     className="h-9 text-xs font-bold bg-background border-border rounded-none"
                                 />
                                 {showSuggestions && suggestions.length > 0 && (
-                                    <div className="absolute top-full left-0 w-full bg-card border border-border shadow-lg z-50 mt-1 max-h-40 overflow-y-auto">
+                                    <div className="absolute bottom-full left-0 w-full bg-card border border-border shadow-lg z-50 mb-1 max-h-40 overflow-y-auto">
                                         {suggestions.map((suggestion) => (
                                             <div
                                                 key={suggestion.name}
                                                 className="p-2 hover:bg-muted cursor-pointer text-xs font-bold flex justify-between items-center"
                                                 onClick={() => handleSelectSuggestion(suggestion)}
+                                                role="button"
+                                                tabIndex={0}
+                                                onKeyDown={(e) => e.key === 'Enter' && handleSelectSuggestion(suggestion)}
                                             >
                                                 <span>{suggestion.name}</span>
                                                 {suggestion.allergen && (
@@ -250,7 +258,9 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                 )}
                             </div>
                             <div className="col-span-2">
+                                <Label htmlFor="ingredient-qty" className="sr-only">Quantité</Label>
                                 <Input
+                                    id="ingredient-qty"
                                     type="number"
                                     placeholder="Qté"
                                     value={newIngredient.quantity || ""}
@@ -259,8 +269,9 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                 />
                             </div>
                             <div className="col-span-2">
+                                <Label htmlFor="ingredient-unit" className="sr-only">Unité</Label>
                                 <Select value={newIngredient.unit} onValueChange={(v) => setNewIngredient({ ...newIngredient, unit: v })}>
-                                    <SelectTrigger className="h-9 text-xs font-bold bg-background border-border rounded-none">
+                                    <SelectTrigger id="ingredient-unit" className="h-9 text-xs font-bold bg-background border-border rounded-none" aria-label="Unité">
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -274,16 +285,15 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div className="col-span-2">
+                            <div className="col-span-3">
+                                <Label htmlFor="ingredient-allergen" className="sr-only">Allergène (optionnel)</Label>
                                 <Select 
                                     value={newIngredient.allergen || "none"} 
                                     onValueChange={(v) => {
-                                        // When manually selecting, we just store the name for now as the dish structure uses names
-                                        // ideally we would store IDs everywhere but that requires a bigger refactor of the Patient/Dish types
                                         setNewIngredient({ ...newIngredient, allergen: v === "none" ? undefined : v })
                                     }}
                                 >
-                                    <SelectTrigger className={cn("h-9 text-xs font-bold border-border rounded-none", newIngredient.allergen ? "bg-red-50 border-red-200 text-red-700" : "bg-background")}>
+                                    <SelectTrigger id="ingredient-allergen" className={cn("h-9 text-xs font-bold border-border rounded-none", newIngredient.allergen ? "bg-red-50 border-red-200 text-red-700" : "bg-background")} aria-label="Allergène">
                                         <SelectValue placeholder="Allergène" />
                                     </SelectTrigger>
                                     <SelectContent className="max-h-60">
@@ -300,6 +310,7 @@ export function DishCreationModal({ open, onOpenChange, onSubmit }: DishCreation
                                     onClick={handleAddIngredient}
                                     className="h-9 w-full bg-orange-600 hover:bg-orange-700 rounded-none"
                                     size="icon"
+                                    aria-label="Ajouter l'ingrédient"
                                 >
                                     <Plus size={16} />
                                 </Button>

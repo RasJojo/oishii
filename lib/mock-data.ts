@@ -151,16 +151,7 @@ export function detectAllergensFromIngredients(ingredients: Ingredient[]): strin
     return Array.from(allergens);
 }
 
-// Fonction utilitaire pour détecter automatiquement les allergènes depuis les ingrédients
-export function detectAllergensFromIngredients(ingredients: Ingredient[]): string[] {
-    const allergens = new Set<string>();
-    ingredients.forEach(ingredient => {
-        if (ingredient.allergen) {
-            allergens.add(ingredient.allergen);
-        }
-    });
-    return Array.from(allergens);
-}
+
 
 export const MOCK_DISHES: Dish[] = [
     // --- 1. GLUTEN ---

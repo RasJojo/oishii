@@ -19,7 +19,7 @@ export const MOCK_STAFF_ACCOUNTS: StaffAccount[] = [
     },
 ];
 
-export type PatientStatus = "ADMITTED" | "DISCHARGED" | "PENDING_SELECTION";
+export type PatientStatus = "PENDING" | "ADMITTED" | "DISABLED";
 
 export interface Patient {
     id: string;
@@ -53,7 +53,7 @@ export const MOCK_PATIENTS: Patient[] = [
         service: "Pédiatrie",
         allergies: ["Lactose"],
         dietaryRestrictions: ["Végétarien"],
-        status: "PENDING_SELECTION",
+        status: "PENDING",
     },
     {
         id: "PAT-003",
@@ -74,7 +74,7 @@ export const MOCK_PATIENTS: Patient[] = [
         service: "Cardiologie",
         allergies: ["Fruits à coque", "Soja"],
         dietaryRestrictions: ["Sans porc"],
-        status: "PENDING_SELECTION",
+        status: "PENDING",
     },
     {
         id: "PAT-005",
@@ -136,6 +136,8 @@ export interface Dish {
         carbs: number;
         fat: number;
     };
+    isBreakfast?: boolean; // true = petit déjeuner uniquement, false/undefined = déjeuner/dîner
+    available?: boolean;
 }
 
 // Fonction utilitaire pour détecter automatiquement les allergènes depuis les ingrédients
